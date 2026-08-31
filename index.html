@@ -44,16 +44,10 @@ body {
     overscroll-behavior: none;
 }
 
-
-/* 防止手機長按圖片、文字造成奇怪效果 */
-
 img {
     -webkit-user-drag: none;
     user-select: none;
 }
-
-
-/* 按鈕 */
 
 button {
     font-family: inherit;
@@ -68,18 +62,6 @@ button {
 /* ==================================================
    遊戲主容器
 ================================================== */
-
-/*
-   電腦：
-   遊戲維持原本的 600px 寬度，
-   讓畫面比例不會突然變掉。
-
-   手機：
-   自動縮成 100% 寬度。
-
-   平板：
-   仍然置中顯示。
-*/
 
 #game {
 
@@ -128,20 +110,27 @@ button {
 
 #worldScreen {
 
-    background: #f8f3e8;
+    width: 100%;
+    height: 100vh;
 
     min-height: 100vh;
-    min-height: 100dvh;
-}
 
+    position: relative;
+
+    overflow: hidden;
+
+    background: #f8f3e8;
+}
 
 .world-map-image {
 
     width: 100%;
-
-    height: auto;
+    height: 100vh;
 
     display: block;
+
+    object-fit: cover;
+    object-position: center center;
 }
 
 
@@ -175,10 +164,10 @@ button {
 
 .player-button {
 
-    width: 68px;
-    height: 68px;
+    width: 90px;
+    height: 90px;
 
-    flex: 0 0 68px;
+    flex: 0 0 90px;
 
     border-radius: 50%;
 
@@ -206,7 +195,8 @@ button {
 
 .player-info-mini {
 
-    background: rgba(255, 250, 238, 0.9);
+    background:
+        rgba(255, 250, 238, 0.9);
 
     border: 2px solid #6b5b49;
 
@@ -232,7 +222,7 @@ button {
 
 
 /* ==================================================
-   地圖上的透明點擊區
+   地圖點擊區
 ================================================== */
 
 .map-location {
@@ -340,7 +330,6 @@ button {
     display: none;
 }
 
-
 .message-box.show {
     display: block;
 }
@@ -403,7 +392,8 @@ button {
 
 .profile-card {
 
-    background: rgba(255,255,255,0.6);
+    background:
+        rgba(255,255,255,0.6);
 
     border: 2px solid #8a7a65;
 
@@ -683,7 +673,7 @@ button {
 
 
 /* ==================================================
-   NPC 立繪
+   NPC
 ================================================== */
 
 .npc-image {
@@ -772,11 +762,6 @@ button {
     left: 50%;
     top: 50%;
 
-    /*
-       使用 viewport 尺寸，
-       讓手機、平板、電腦都能保持比例。
-    */
-
     width: max(180%, 1100px);
 
     height: max(240%, 1400px);
@@ -795,11 +780,9 @@ button {
     z-index: 1;
 }
 
-
 #forestMid {
     z-index: 2;
 }
-
 
 #forestFront {
     z-index: 4;
@@ -807,7 +790,7 @@ button {
 
 
 /* ==================================================
-   玩家
+   ⭐ 森林探索玩家
 ================================================== */
 
 #explorePlayer {
@@ -820,18 +803,13 @@ button {
     transform:
         translate(-50%, -50%);
 
-    /*
-       桌機維持 160 × 220
-       手機稍微縮小
-    */
-
     width: min(
-        160px,
+        200px,
         30vw
     );
 
     height: min(
-        220px,
+        280px,
         40vw
     );
 
@@ -951,13 +929,6 @@ button {
 
     right: 15px;
 
-    /*
-       自動縮放：
-
-       電腦：約 280px
-       手機：約 145～190px
-    */
-
     width: min(
         280px,
         38vw
@@ -967,9 +938,17 @@ button {
 
     z-index: 25;
 
-    pointer-events: none;
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease;
 }
 
+
+#forestMiniMap:active {
+
+    transform: scale(0.97);
+}
 
 #forestMiniMapImage {
 
@@ -981,11 +960,94 @@ button {
 
     object-fit: contain;
 
-    pointer-events: none;
-
     user-select: none;
 }
 
+/* ==================================================
+   小地圖放大
+================================================== */
+
+#forestMapOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(35, 31, 25, 0.72);
+
+    z-index: 200;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 25px;
+
+    cursor: pointer;
+}
+
+
+#forestMapOverlay.show {
+
+    display: flex;
+}
+
+
+#forestMapLarge {
+
+    width: min(
+        90vw,
+        520px
+    );
+
+    max-height: 85vh;
+
+    object-fit: contain;
+
+    border:
+        3px solid #6b5b49;
+
+    border-radius: 12px;
+
+    background: #fffaf0;
+
+    box-shadow:
+        0 6px 20px rgba(0,0,0,0.35);
+
+    cursor: default;
+}
+
+
+#forestMapHint {
+
+    position: absolute;
+
+    left: 50%;
+
+    bottom:
+        max(
+            25px,
+            env(safe-area-inset-bottom)
+        );
+
+    transform:
+        translateX(-50%);
+
+    color: white;
+
+    font-size: 14px;
+
+    background:
+        rgba(0,0,0,0.45);
+
+    padding: 7px 12px;
+
+    border-radius: 8px;
+
+    pointer-events: none;
+}
 
 /* ==================================================
    小地圖玩家位置
@@ -1041,11 +1103,6 @@ button {
             env(safe-area-inset-bottom)
         );
 
-    /*
-       電腦 130px
-       手機最多不超過 130px
-    */
-
     width: min(
         130px,
         27vw
@@ -1076,10 +1133,6 @@ button {
     -webkit-user-select: none;
 }
 
-
-/* ==================================================
-   搖桿按鈕
-================================================== */
 
 #joystickKnob {
 
@@ -1222,7 +1275,7 @@ button {
 
 
 /* ==================================================
-   森林 / 戰鬥
+   戰鬥
 ================================================== */
 
 .adventure-card {
@@ -1363,7 +1416,7 @@ button {
 
 
 /* ==================================================
-   EXP BAR
+   EXP
 ================================================== */
 
 .exp-bar {
@@ -1396,7 +1449,7 @@ button {
 
 
 /* ==================================================
-   升級提示
+   升級
 ================================================== */
 
 .level-up-box {
@@ -1461,6 +1514,194 @@ button {
 
 .equipment-item:last-child {
     border-bottom: none;
+}
+
+
+/* ==================================================
+   角色創建
+================================================== */
+
+#characterCreateScreen {
+
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: none;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    padding: 35px 20px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #f8f3e8,
+            #eee3cf
+        );
+
+    text-align: center;
+}
+
+
+#characterCreateScreen.active {
+    display: flex;
+}
+
+
+.create-title {
+
+    font-size: 30px;
+
+    margin: 10px 0 5px;
+}
+
+
+.create-subtitle {
+
+    color: #756858;
+
+    margin-bottom: 20px;
+}
+
+
+/* 角色預覽 */
+
+.character-preview {
+
+    width: 260px;
+    height: 300px;
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: center;
+
+    margin-bottom: 15px;
+}
+
+
+.character-preview img {
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+}
+
+
+/* 名字 */
+
+.name-label {
+
+    align-self: flex-start;
+
+    width: 100%;
+    max-width: 360px;
+
+    margin-bottom: 7px;
+
+    font-weight: bold;
+}
+
+
+.name-input {
+
+    width: 100%;
+    max-width: 360px;
+
+    padding: 13px 15px;
+
+    border: 2px solid #8a7a65;
+
+    border-radius: 10px;
+
+    background: #fffdf7;
+
+    font-size: 17px;
+
+    outline: none;
+
+    margin-bottom: 20px;
+}
+
+
+/* 性別 */
+
+.gender-title {
+
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+
+.gender-buttons {
+
+    display: flex;
+
+    gap: 15px;
+
+    margin-bottom: 25px;
+}
+
+
+.gender-button {
+
+    width: 120px;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    border: 2px solid #8a7a65;
+
+    background: #fffaf0;
+
+    font-size: 17px;
+
+    transition: 0.15s;
+}
+
+
+.gender-button.selected {
+
+    background: #e4d3b5;
+
+    border-color: #4f4235;
+
+    transform: scale(1.03);
+}
+
+
+/* 開始遊戲 */
+
+.start-game-button {
+
+    width: 100%;
+    max-width: 360px;
+
+    padding: 15px;
+
+    border-radius: 12px;
+
+    border: 2px solid #5c4d3c;
+
+    background: #d9c39d;
+
+    color: #3d3024;
+
+    font-size: 18px;
+
+    font-weight: bold;
+}
+
+
+.start-game-button:active {
+
+    transform: scale(0.97);
 }
 
 
@@ -1553,10 +1794,6 @@ button {
     }
 
 
-    /*
-       手機森林的按鈕不要太大
-    */
-
     .forest-back-button,
     .forest-battle-button {
 
@@ -1566,10 +1803,6 @@ button {
         font-size: 13px;
     }
 
-
-    /*
-       手機搖桿
-    */
 
     #joystick {
 
@@ -1582,10 +1815,6 @@ button {
 
 }
 
-
-/* ==================================================
-   很小的手機
-================================================== */
 
 @media (max-width: 380px) {
 
@@ -1642,10 +1871,6 @@ button {
 }
 
 
-/* ==================================================
-   平板橫向
-================================================== */
-
 @media (
     min-width: 601px
 ) and (
@@ -1677,10 +1902,6 @@ button {
 }
 
 
-/* ==================================================
-   電腦
-================================================== */
-
 @media (
     min-width: 1000px
 ) {
@@ -1706,23 +1927,14 @@ button {
 }
 
 
-/* ==================================================
-   觸控裝置
-================================================== */
-
 @media (hover: none) and (pointer: coarse) {
 
     button {
-
         min-height: 44px;
     }
 
 }
 
-
-/* ==================================================
-   減少動畫偏好
-================================================== */
 
 @media (prefers-reduced-motion: reduce) {
 
@@ -1739,6 +1951,79 @@ button {
 
 }
 
+/* ==================================================
+   戰敗過場
+================================================== */
+
+#defeatOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(30, 25, 20, 0.82);
+
+    z-index: 200;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    color: #fffaf0;
+
+    pointer-events: none;
+
+}
+
+
+#defeatOverlay.show {
+
+    display: flex;
+
+}
+
+
+.defeat-message {
+
+    font-size: 22px;
+
+    line-height: 1.8;
+
+    opacity: 0;
+
+    transform: translateY(8px);
+
+    transition:
+        opacity 0.8s ease,
+        transform 0.8s ease;
+
+}
+
+
+#defeatOverlay.show .defeat-message {
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+}
+
+
+.defeat-sub {
+
+    margin-top: 10px;
+
+    font-size: 15px;
+
+    opacity: 0.7;
+
+}
+
 </style>
 </head>
 
@@ -1749,10 +2034,95 @@ button {
 
 
 <!-- ==================================================
+     角色創建
+================================================== -->
+
+<div
+    id="characterCreateScreen"
+    class="screen active"
+>
+
+    <h1 class="create-title">
+        小小世界
+    </h1>
+
+
+    <div class="create-subtitle">
+        創建你的冒險者
+    </div>
+
+
+    <div class="character-preview">
+
+        <img
+            id="characterPreview"
+            src="images/player-female.png"
+            alt="角色預覽"
+        >
+
+    </div>
+
+
+    <div class="name-label">
+        冒險者名字
+    </div>
+
+
+    <input
+        id="playerNameInput"
+        class="name-input"
+        type="text"
+        maxlength="10"
+        value="艾爾塔寧"
+        placeholder="請輸入名字"
+    >
+
+
+    <div class="gender-title">
+        選擇性別
+    </div>
+
+
+    <div class="gender-buttons">
+
+        <button
+            id="femaleButton"
+            class="gender-button selected"
+            onclick="selectGender('female')"
+        >
+            ♀ 女
+        </button>
+
+
+        <button
+            id="maleButton"
+            class="gender-button"
+            onclick="selectGender('male')"
+        >
+            ♂ 男
+        </button>
+
+    </div>
+
+
+    <button
+        class="start-game-button"
+        onclick="createCharacter()"
+    >
+        開始冒險
+    </button>
+
+</div>
+
+
+<!-- ==================================================
      世界地圖
 ================================================== -->
 
-<div id="worldScreen" class="screen active">
+<div
+    id="worldScreen"
+    class="screen"
+>
 
     <img
         src="images/world-map.png"
@@ -1769,7 +2139,8 @@ button {
         >
 
             <img
-                src="images/player.png"
+                id="playerAvatar"
+                src="images/player-female.png"
                 alt="玩家頭像"
             >
 
@@ -1778,13 +2149,18 @@ button {
 
         <div class="player-info-mini">
 
-            <div class="player-name-mini">
-                艾爾塔寧
+            <div
+                class="player-name-mini"
+                id="miniPlayerName"
+            >
+                冒險者
             </div>
+
 
             <div id="miniLevel">
                 Lv. 1
             </div>
+
 
             <div id="miniHp">
                 ❤️ 30 / 30
@@ -1833,7 +2209,7 @@ button {
 
 
 <!-- ==================================================
-     人物詳情
+     冒險者資料
 ================================================== -->
 
 <div
@@ -1856,15 +2232,21 @@ button {
 
     <div class="profile-card">
 
+        <!-- ⭐ 這裡只負責冒險者資料頁 -->
+
         <img
-            src="images/player.png"
+            id="playerProfileAvatar"
             class="profile-avatar"
-            alt="艾爾塔寧"
+            src="images/player-female.png"
+            alt="玩家立繪"
         >
 
 
-        <div class="profile-name">
-            艾爾塔寧
+        <div
+            class="profile-name"
+            id="profileName"
+        >
+            冒險者
         </div>
 
 
@@ -1974,7 +2356,7 @@ button {
                 class="stat-main"
                 id="profileMagicDefense"
             >
-                ✨ 魔法防禦：4
+                ✨ 魔法防禦：4.5
             </div>
 
         </div>
@@ -2175,9 +2557,11 @@ button {
         <div class="stat-box">
 
             💰 金幣：
+
             <strong id="profileGold">
                 100
             </strong>
+
             G
 
         </div>
@@ -2239,12 +2623,20 @@ button {
 
         <button
             class="location-button"
+            onclick="showScreen('hospitalScreen')"
+        >
+            🏥<br>
+            病院
+        </button>
+
+
+        <button
+            class="location-button"
             onclick="showScreen('itemShopScreen')"
         >
             🧪<br>
             道具店
         </button>
-
 
         <button
             class="location-button"
@@ -2513,6 +2905,64 @@ button {
 
 </div>
 
+<!-- ==================================================
+     病院
+================================================== -->
+
+<div
+    id="hospitalScreen"
+    class="screen page"
+>
+
+    <button
+        class="back-button"
+        onclick="showScreen('townScreen')"
+    >
+        ← 小小鎮
+    </button>
+
+
+    <h1 class="page-title">
+        病院
+    </h1>
+
+
+    <div class="location-card">
+
+        <div class="big-icon">
+            🏥
+        </div>
+
+
+        <p>
+            「歡迎來到病院。」
+        </p>
+
+
+        <p>
+            「在這裡好好休息一下吧。」
+        </p>
+
+
+        <button
+            class="action-button"
+            onclick="restAtHospital()"
+        >
+            🛏️ 休養
+        </button>
+
+
+        <button
+            class="action-button"
+            onclick="showScreen('townScreen')"
+        >
+            ← 回小小鎮
+        </button>
+
+    </div>
+
+</div>
+
 
 <!-- ==================================================
      森林探索
@@ -2547,10 +2997,12 @@ button {
     >
 
 
+    <!-- ⭐ 森林探索專用玩家立繪 -->
+
     <img
         id="explorePlayer"
-        src="images/player.png"
-        alt="艾爾塔寧"
+        src="images/player-female.png"
+        alt="玩家"
     >
 
 
@@ -2562,8 +3014,6 @@ button {
 
     </div>
 
-
-    <!-- 小地圖 -->
 
     <div id="forestMiniMap">
 
@@ -2578,8 +3028,28 @@ button {
 
     </div>
 
+<!-- ==================================================
+     森林地圖放大
+================================================== -->
 
-    <!-- 森林按鈕 -->
+<div
+    id="forestMapOverlay"
+    onclick="closeForestMap()"
+>
+
+    <img
+        id="forestMapLarge"
+        src="images/forest-map.png"
+        alt="森林完整地圖"
+        onclick="event.stopPropagation()"
+    >
+
+    <div id="forestMapHint">
+        點擊空白處關閉地圖
+    </div>
+
+</div>
+
 
     <div class="forest-explore-actions">
 
@@ -2600,8 +3070,6 @@ button {
 
     </div>
 
-
-    <!-- 虛擬搖桿 -->
 
     <div
         id="joystick"
@@ -2717,7 +3185,7 @@ button {
             <div class="status-card">
 
                 <div class="status-name">
-                    👤 艾爾塔寧
+                    👤 玩家
                 </div>
 
 
@@ -2816,6 +3284,26 @@ button {
 
 </div>
 
+<!-- ==================================================
+     戰敗過場
+================================================== -->
+
+<div id="defeatOverlay">
+
+    <div class="defeat-message">
+
+        <div id="defeatMessageText">
+            你失去了意識……
+        </div>
+
+
+        <div class="defeat-sub">
+            ……
+        </div>
+
+    </div>
+
+</div>
 
 <!-- ==================================================
      提示訊息
@@ -2834,9 +3322,6 @@ button {
     <small>
         點擊關閉
     </small>
-
-</div>
-
 
 </div>
 
@@ -2863,12 +3348,14 @@ const equipment = {
 
 
 /* ==================================================
-   玩家資料
+   ⭐ 唯一的玩家資料
 ================================================== */
 
 const player = {
 
-    name: "艾爾塔寧",
+    name: "",
+
+    gender: "female",
 
     level: 1,
 
@@ -3049,41 +3536,69 @@ function updatePlayerUI() {
 
     if (player.currentHp > stats.maxHp) {
 
-        player.currentHp = stats.maxHp;
+        player.currentHp =
+            stats.maxHp;
 
     }
 
 
     if (player.currentMp > stats.maxMp) {
 
-        player.currentMp = stats.maxMp;
+        player.currentMp =
+            stats.maxMp;
 
     }
 
 
-    document.getElementById("miniLevel").textContent =
+    /* 世界地圖 */
+
+    document.getElementById(
+        "miniPlayerName"
+    ).textContent =
+        player.name || "冒險者";
+
+
+    document.getElementById(
+        "miniLevel"
+    ).textContent =
         "Lv. " + player.level;
 
 
-    document.getElementById("miniHp").textContent =
+    document.getElementById(
+        "miniHp"
+    ).textContent =
         "❤️ "
         + player.currentHp
         + " / "
         + stats.maxHp;
 
 
-    document.getElementById("profileLevel").textContent =
+    /* 冒險者資料 */
+
+    document.getElementById(
+        "profileName"
+    ).textContent =
+        player.name || "冒險者";
+
+
+    document.getElementById(
+        "profileLevel"
+    ).textContent =
         "Lv. " + player.level;
 
 
-    document.getElementById("profileHp").textContent =
+    document.getElementById(
+        "profileHp"
+    ).textContent =
         "❤️ HP："
         + player.currentHp
         + " / "
         + stats.maxHp;
 
 
-    document.getElementById("profileMp").textContent =
+    document.getElementById(
+        "profileMp"
+    ).textContent =
         "🔵 MP："
         + player.currentMp
         + " / "
@@ -3094,7 +3609,9 @@ function updatePlayerUI() {
         getExpToNextLevel();
 
 
-    document.getElementById("profileExp").textContent =
+    document.getElementById(
+        "profileExp"
+    ).textContent =
         "✨ EXP："
         + player.exp
         + " / "
@@ -3108,67 +3625,100 @@ function updatePlayerUI() {
         );
 
 
-    document.getElementById("profileExpFill").style.width =
+    document.getElementById(
+        "profileExpFill"
+    ).style.width =
         expPercent + "%";
 
 
-    document.getElementById("profileAttack").textContent =
+    document.getElementById(
+        "profileAttack"
+    ).textContent =
         "⚔️ 攻擊力：" + stats.attack;
 
 
-    document.getElementById("profileDefense").textContent =
+    document.getElementById(
+        "profileDefense"
+    ).textContent =
         "🛡️ 防禦力：" + stats.defense;
 
 
-    document.getElementById("profileMagicAttack").textContent =
+    document.getElementById(
+        "profileMagicAttack"
+    ).textContent =
         "🔮 魔法攻擊：" + stats.magicAttack;
 
 
-    document.getElementById("profileMagicDefense").textContent =
-        "✨ 魔法防禦：" + stats.magicDefense.toFixed(1);
+    document.getElementById(
+        "profileMagicDefense"
+    ).textContent =
+        "✨ 魔法防禦："
+        + stats.magicDefense.toFixed(1);
 
 
-    document.getElementById("profileSpeed").textContent =
+    document.getElementById(
+        "profileSpeed"
+    ).textContent =
         "💨 速度：" + stats.speed;
 
 
-    document.getElementById("profileEvasion").textContent =
+    document.getElementById(
+        "profileEvasion"
+    ).textContent =
         "🪽 閃避率："
         + stats.evasion.toFixed(1)
         + "%";
 
 
-    document.getElementById("profileGold").textContent =
+    document.getElementById(
+        "profileGold"
+    ).textContent =
         player.gold;
 
 
-    document.getElementById("strValue").textContent =
+    /* 屬性 */
+
+    document.getElementById(
+        "strValue"
+    ).textContent =
         player.attributes.str;
 
 
-    document.getElementById("vitValue").textContent =
+    document.getElementById(
+        "vitValue"
+    ).textContent =
         player.attributes.vit;
 
 
-    document.getElementById("agiValue").textContent =
+    document.getElementById(
+        "agiValue"
+    ).textContent =
         player.attributes.agi;
 
 
-    document.getElementById("intValue").textContent =
+    document.getElementById(
+        "intValue"
+    ).textContent =
         player.attributes.int;
 
 
-    document.getElementById("spiValue").textContent =
+    document.getElementById(
+        "spiValue"
+    ).textContent =
         player.attributes.spi;
 
 
-    document.getElementById("attributePoints").textContent =
+    document.getElementById(
+        "attributePoints"
+    ).textContent =
         "可分配點數："
         + player.attributePoints;
 
 
     const buttons =
-        document.querySelectorAll(".plus-button");
+        document.querySelectorAll(
+            ".plus-button"
+        );
 
 
     buttons.forEach(function(button) {
@@ -3190,7 +3740,8 @@ function updatePlayerUI() {
 
 function updateBattlePlayerUI() {
 
-    const stats = getPlayerStats();
+    const stats =
+        getPlayerStats();
 
 
     const hpPercent =
@@ -3214,11 +3765,15 @@ function updateBattlePlayerUI() {
 
 
     const hpText =
-        document.getElementById("battlePlayerHp");
+        document.getElementById(
+            "battlePlayerHp"
+        );
 
 
     const mpText =
-        document.getElementById("battlePlayerMp");
+        document.getElementById(
+            "battlePlayerMp"
+        );
 
 
     if (hpText) {
@@ -3244,11 +3799,15 @@ function updateBattlePlayerUI() {
 
 
     const hpFill =
-        document.getElementById("battlePlayerHpFill");
+        document.getElementById(
+            "battlePlayerHpFill"
+        );
 
 
     const mpFill =
-        document.getElementById("battlePlayerMpFill");
+        document.getElementById(
+            "battlePlayerMpFill"
+        );
 
 
     if (hpFill) {
@@ -3339,13 +3898,19 @@ function checkLevelUp() {
 
 
         const levelUpBox =
-            document.getElementById("levelUpBox");
+            document.getElementById(
+                "levelUpBox"
+            );
 
 
-        levelUpBox.classList.add("show");
+        levelUpBox.classList.add(
+            "show"
+        );
 
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             "🎉 <strong>升級了！</strong><br>"
             + "現在是 Lv."
             + player.level
@@ -3362,7 +3927,10 @@ function checkLevelUp() {
    傷害
 ================================================== */
 
-function calculateDamage(attack, defense) {
+function calculateDamage(
+    attack,
+    defense
+) {
 
     const rawDamage =
         (attack - defense)
@@ -3381,9 +3949,12 @@ function calculateDamage(attack, defense) {
    閃避
 ================================================== */
 
-function checkEvasion(evasionPercent) {
+function checkEvasion(
+    evasionPercent
+) {
 
-    return Math.random() * 100 < evasionPercent;
+    return Math.random() * 100
+        < evasionPercent;
 
 }
 
@@ -3394,7 +3965,9 @@ function checkEvasion(evasionPercent) {
 
 function enterForest() {
 
-    showScreen("forestExploreScreen");
+    showScreen(
+        "forestExploreScreen"
+    );
 
     resetForestPosition();
 
@@ -3427,29 +4000,35 @@ function startNewBattle() {
     battleOver = false;
 
 
-    document
-        .getElementById("attackButton")
-        .style.display = "block";
+    document.getElementById(
+        "attackButton"
+    ).style.display =
+        "block";
 
 
-    document
-        .getElementById("attackButton")
-        .disabled = false;
+    document.getElementById(
+        "attackButton"
+    ).disabled =
+        false;
 
 
-    document
-        .getElementById("newEnemyButton")
-        .style.display = "none";
+    document.getElementById(
+        "newEnemyButton"
+    ).style.display =
+        "none";
 
 
-    document
-        .getElementById("leaveBattleButton")
-        .style.display = "block";
+    document.getElementById(
+        "leaveBattleButton"
+    ).style.display =
+        "block";
 
 
-    document
-        .getElementById("levelUpBox")
-        .classList.remove("show");
+    document.getElementById(
+        "levelUpBox"
+    ).classList.remove(
+        "show"
+    );
 
 
     updateEnemyUI();
@@ -3466,7 +4045,9 @@ function startNewBattle() {
         > playerStats.speed
     ) {
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             currentEnemy.icon
             + " "
             + currentEnemy.name
@@ -3474,17 +4055,22 @@ function startNewBattle() {
             + "牠先攻！";
 
 
-        setTimeout(function() {
+        setTimeout(
+            function() {
 
-            enemyAttack();
+                enemyAttack();
 
-        }, 500);
+            },
+            500
+        );
 
     }
 
     else {
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             currentEnemy.icon
             + " "
             + currentEnemy.name
@@ -3509,15 +4095,21 @@ function updateEnemyUI() {
     }
 
 
-    document.getElementById("enemyIcon").textContent =
+    document.getElementById(
+        "enemyIcon"
+    ).textContent =
         currentEnemy.icon;
 
 
-    document.getElementById("enemyName").textContent =
+    document.getElementById(
+        "enemyName"
+    ).textContent =
         currentEnemy.name;
 
 
-    document.getElementById("enemyHpText").textContent =
+    document.getElementById(
+        "enemyHpText"
+    ).textContent =
         "HP："
         + enemyHp
         + " / "
@@ -3532,11 +4124,15 @@ function updateEnemyUI() {
         );
 
 
-    document.getElementById("enemyHpFill").style.width =
+    document.getElementById(
+        "enemyHpFill"
+    ).style.width =
         hpPercent + "%";
 
 
-    document.getElementById("enemyStats").textContent =
+    document.getElementById(
+        "enemyStats"
+    ).textContent =
         "ATK "
         + currentEnemy.attack
         + "　DEF "
@@ -3556,7 +4152,11 @@ function updateEnemyUI() {
 
 function attackEnemy() {
 
-    if (!battleActive || battleOver) {
+    if (
+        !battleActive
+        ||
+        battleOver
+    ) {
 
         return;
 
@@ -3564,10 +4164,13 @@ function attackEnemy() {
 
 
     const attackButton =
-        document.getElementById("attackButton");
+        document.getElementById(
+            "attackButton"
+        );
 
 
-    attackButton.disabled = true;
+    attackButton.disabled =
+        true;
 
 
     const playerStats =
@@ -3580,7 +4183,9 @@ function attackEnemy() {
         )
     ) {
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             "你揮出木劍！<br>"
             + currentEnemy.icon
             + " "
@@ -3608,7 +4213,9 @@ function attackEnemy() {
         }
 
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             "你對 "
             + currentEnemy.name
             + " 造成了 "
@@ -3632,11 +4239,14 @@ function attackEnemy() {
     }
 
 
-    setTimeout(function() {
+    setTimeout(
+        function() {
 
-        enemyAttack();
+            enemyAttack();
 
-    }, 500);
+        },
+        500
+    );
 
 }
 
@@ -3647,7 +4257,11 @@ function attackEnemy() {
 
 function enemyAttack() {
 
-    if (!battleActive || battleOver) {
+    if (
+        !battleActive
+        ||
+        battleOver
+    ) {
 
         return;
 
@@ -3664,15 +4278,18 @@ function enemyAttack() {
         )
     ) {
 
-        document.getElementById("battleLog").innerHTML +=
+        document.getElementById(
+            "battleLog"
+        ).innerHTML +=
             "<br>你閃開了 "
             + currentEnemy.name
             + " 的攻擊！";
 
 
-        document
-            .getElementById("attackButton")
-            .disabled = false;
+        document.getElementById(
+            "attackButton"
+        ).disabled =
+            false;
 
 
         return;
@@ -3697,7 +4314,9 @@ function enemyAttack() {
     }
 
 
-    document.getElementById("battleLog").innerHTML +=
+    document.getElementById(
+        "battleLog"
+    ).innerHTML +=
         "<br>"
         + currentEnemy.icon
         + " "
@@ -3721,9 +4340,10 @@ function enemyAttack() {
     }
 
 
-    document
-        .getElementById("attackButton")
-        .disabled = false;
+    document.getElementById(
+        "attackButton"
+    ).disabled =
+        false;
 
 }
 
@@ -3739,28 +4359,34 @@ function winBattle() {
     battleOver = true;
 
 
-    document
-        .getElementById("attackButton")
-        .style.display = "none";
+    document.getElementById(
+        "attackButton"
+    ).style.display =
+        "none";
 
 
-    document
-        .getElementById("newEnemyButton")
-        .style.display = "block";
+    document.getElementById(
+        "newEnemyButton"
+    ).style.display =
+        "block";
 
 
-    document
-        .getElementById("leaveBattleButton")
-        .style.display = "block";
+    document.getElementById(
+        "leaveBattleButton"
+    ).style.display =
+        "block";
 
 
     const oldLevel =
         player.level;
 
 
-    player.exp += currentEnemy.exp;
+    player.exp +=
+        currentEnemy.exp;
 
-    player.gold += currentEnemy.gold;
+
+    player.gold +=
+        currentEnemy.gold;
 
 
     checkLevelUp();
@@ -3769,9 +4395,13 @@ function winBattle() {
     updatePlayerUI();
 
 
-    if (player.level > oldLevel) {
+    if (
+        player.level > oldLevel
+    ) {
 
-        document.getElementById("battleLog").innerHTML =
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
             "🎉 <strong>戰鬥勝利！</strong><br>"
             + "擊敗了 "
             + currentEnemy.name
@@ -3805,6 +4435,13 @@ function winBattle() {
 
     }
 
+
+    setTimeout(function() {
+
+        showScreen("forestExploreScreen");
+
+    }, 1000);
+
 }
 
 
@@ -3826,17 +4463,84 @@ function loseBattle() {
 
     document
         .getElementById("newEnemyButton")
-        .style.display = "block";
+        .style.display = "none";
+
+
+    document
+        .getElementById("leaveBattleButton")
+        .style.display = "none";
 
 
     document.getElementById("battleLog").innerHTML =
-        "💦 你倒下了……<br>"
-        + "這場戰鬥失敗了。"
-        + "<br><br>"
-        + "可以回家休息後再來挑戰。";
+        "💦 你失去了意識……";
+
+
+    const overlay =
+        document.getElementById("defeatOverlay");
+
+
+    const message =
+        document.getElementById("defeatMessageText");
+
+
+    message.textContent =
+        "你失去了意識……";
+
+
+    overlay.classList.add("show");
+
+
+    /* --------------------------------
+       第一段過場
+    -------------------------------- */
+
+    setTimeout(function() {
+
+        message.textContent =
+            "……";
+
+    }, 1200);
+
+
+    /* --------------------------------
+       進入病院
+    -------------------------------- */
+
+    setTimeout(function() {
+
+        const stats =
+            getPlayerStats();
+
+
+        player.currentHp =
+            stats.maxHp;
+
+
+        player.currentMp =
+            stats.maxMp;
+
+
+        updatePlayerUI();
+
+
+        showScreen("hospitalScreen");
+
+
+        overlay.classList.remove("show");
+
+
+        setTimeout(function() {
+
+            showMessage(
+                "你在病院醒了過來。"
+                + " HP 與 MP 已完全恢復！"
+            );
+
+        }, 300);
+
+    }, 2200);
 
 }
-
 
 /* ==================================================
    離開戰鬥
@@ -3849,7 +4553,9 @@ function leaveBattle() {
     battleOver = true;
 
 
-    showScreen("worldScreen");
+    showScreen(
+        "worldScreen"
+    );
 
     updatePlayerUI();
 
@@ -3884,6 +4590,33 @@ function rest() {
 
 }
 
+/* ==================================================
+   病院休養
+================================================== */
+
+function restAtHospital() {
+
+    const stats =
+        getPlayerStats();
+
+
+    player.currentHp =
+        stats.maxHp;
+
+
+    player.currentMp =
+        stats.maxMp;
+
+
+    updatePlayerUI();
+
+
+    showMessage(
+        "你在病院好好休息了一會兒！"
+        + " HP 與 MP 已完全恢復！"
+    );
+
+}
 
 /* ==================================================
    畫面切換
@@ -3892,19 +4625,27 @@ function rest() {
 function showScreen(screenId) {
 
     const screens =
-        document.querySelectorAll(".screen");
+        document.querySelectorAll(
+            ".screen"
+        );
 
 
-    screens.forEach(function(screen) {
+    screens.forEach(
+        function(screen) {
 
-        screen.classList.remove("active");
+            screen.classList.remove(
+                "active"
+            );
 
-    });
+        }
+    );
 
 
-    document
-        .getElementById(screenId)
-        .classList.add("active");
+    document.getElementById(
+        screenId
+    ).classList.add(
+        "active"
+    );
 
 
     window.scrollTo(
@@ -3924,23 +4665,28 @@ function showScreen(screenId) {
 
 function showMessage(text) {
 
-    document
-        .getElementById("messageText")
-        .textContent = text;
+    document.getElementById(
+        "messageText"
+    ).textContent =
+        text;
 
 
-    document
-        .getElementById("messageBox")
-        .classList.add("show");
+    document.getElementById(
+        "messageBox"
+    ).classList.add(
+        "show"
+    );
 
 }
 
 
 function hideMessage() {
 
-    document
-        .getElementById("messageBox")
-        .classList.remove("show");
+    document.getElementById(
+        "messageBox"
+    ).classList.remove(
+        "show"
+    );
 
 }
 
@@ -3952,6 +4698,79 @@ function hideMessage() {
 let forestX = 0;
 
 let forestY = 0;
+
+/* ==================================================
+   森林遇敵
+================================================== */
+
+const forestEncounterRate = 0.10;
+
+let forestEncounterPending = false;
+
+let forestMoveDistance = 0;
+
+const forestEncounterDistance = 16;
+
+/* ==================================================
+   森林遇敵判定
+================================================== */
+
+function checkForestEncounter() {
+
+    if (forestEncounterPending) {
+
+        return;
+
+    }
+
+
+    if (
+        Math.random()
+        < forestEncounterRate
+    ) {
+
+        triggerForestEncounter();
+
+    }
+
+}
+
+/* ==================================================
+   發生遇敵
+================================================== */
+
+function triggerForestEncounter() {
+
+    forestEncounterPending = true;
+
+
+    /* 停止搖桿 */
+
+    joystickActive = false;
+
+    joystickPointerId = null;
+
+    resetJoystick();
+
+
+    /* 顯示提示 */
+
+    showMessage(
+        "⚠️ 有東西靠近了……"
+    );
+
+
+    setTimeout(function() {
+
+        hideMessage();
+
+        startBattleFromForest();
+
+        forestEncounterPending = false;
+
+    }, 700);
+
+}
 
 
 const forestMaxX = 70;
@@ -3966,13 +4785,21 @@ const forestMaxY = 100;
 function updateForestPosition() {
 
     const far =
-        document.getElementById("forestFar");
+        document.getElementById(
+            "forestFar"
+        );
+
 
     const mid =
-        document.getElementById("forestMid");
+        document.getElementById(
+            "forestMid"
+        );
+
 
     const front =
-        document.getElementById("forestFront");
+        document.getElementById(
+            "forestFront"
+        );
 
 
     far.style.transform =
@@ -4014,56 +4841,98 @@ function resetForestPosition() {
 
     forestY = 0;
 
+    forestMoveDistance = 0;
+
+    forestEncounterPending = false;
+
     updateForestPosition();
 
     updateMiniMapPosition();
 
 }
 
-
 /* ==================================================
    移動森林
 ================================================== */
 
-function moveForest(directionX, directionY) {
+function moveForest(
+    directionX,
+    directionY
+) {
 
     forestX += directionX;
 
     forestY += directionY;
 
 
-    if (forestX > forestMaxX) {
+    if (
+        forestX > forestMaxX
+    ) {
 
-        forestX = forestMaxX;
-
-    }
-
-
-    if (forestX < -forestMaxX) {
-
-        forestX = -forestMaxX;
+        forestX =
+            forestMaxX;
 
     }
 
 
-    if (forestY > forestMaxY) {
+    if (
+        forestX < -forestMaxX
+    ) {
 
-        forestY = forestMaxY;
-
-    }
-
-
-    if (forestY < -forestMaxY) {
-
-        forestY = -forestMaxY;
+        forestX =
+            -forestMaxX;
 
     }
 
 
-    updateForestPosition();
+    if (
+        forestY > forestMaxY
+    ) {
 
-    updateMiniMapPosition();
+        forestY =
+            forestMaxY;
 
+    }
+
+
+    if (
+        forestY < -forestMaxY
+    ) {
+
+        forestY =
+            -forestMaxY;
+
+    }
+
+
+updateForestPosition();
+
+updateMiniMapPosition();
+
+
+/* 累積探索距離 */
+
+forestMoveDistance +=
+    Math.abs(directionX)
+    +
+    Math.abs(directionY);
+
+
+/*
+   累積到一定距離後
+   才進行一次遇敵判定
+*/
+
+if (
+    forestMoveDistance
+    >= forestEncounterDistance
+) {
+
+    forestMoveDistance = 0;
+
+    checkForestEncounter();
+
+}
 
     const playerImage =
         document.getElementById(
@@ -4157,6 +5026,38 @@ function updateMiniMapPosition() {
 
 
 /* ==================================================
+   小地圖放大
+================================================== */
+
+const forestMiniMap =
+    document.getElementById("forestMiniMap");
+
+
+const forestMapOverlay =
+    document.getElementById("forestMapOverlay");
+
+
+forestMiniMap.addEventListener(
+    "click",
+    function() {
+
+        forestMapOverlay.classList.add("show");
+
+    }
+);
+
+
+/* ==================================================
+   關閉森林地圖
+================================================== */
+
+function closeForestMap() {
+
+    forestMapOverlay.classList.remove("show");
+
+}
+
+/* ==================================================
    虛擬搖桿
 ================================================== */
 
@@ -4177,18 +5078,11 @@ let joystickActive = false;
 let joystickPointerId = null;
 
 
-/*
-   注意：
-
-   原本固定 65px 的半徑，
-   在手機縮小搖桿後會不準。
-
-   現在改成依照實際搖桿大小計算。
-*/
-
 function getJoystickRadius() {
 
-    return joystick.getBoundingClientRect().width / 2;
+    return joystick
+        .getBoundingClientRect()
+        .width / 2;
 
 }
 
@@ -4197,7 +5091,9 @@ function getKnobRadius() {
 
     return Math.min(
         38,
-        joystick.getBoundingClientRect().width * 0.29
+        joystick
+            .getBoundingClientRect()
+            .width * 0.29
     );
 
 }
@@ -4210,10 +5106,6 @@ function getKnobRadius() {
 joystick.addEventListener(
     "pointerdown",
     function(event) {
-
-        /*
-           只有森林探索畫面才啟用
-        */
 
         const forestScreen =
             document.getElementById(
@@ -4377,8 +5269,7 @@ function updateJoystick(
 
 
     if (
-        distance
-        > knobRadius
+        distance > knobRadius
     ) {
 
         dx =
@@ -4413,13 +5304,13 @@ function updateJoystick(
     const moveX =
         -(dx / knobRadius)
         * strength
-        * 0.6;
+        * 0.4;
 
 
     const moveY =
         -(dy / knobRadius)
         * strength
-        * 0.6;
+        * 0.4;
 
 
     moveForest(
@@ -4583,7 +5474,9 @@ function startBattleFromForest() {
 
     resetJoystick();
 
-    showScreen("forestScreen");
+    showScreen(
+        "forestScreen"
+    );
 
     startNewBattle();
 
@@ -4600,26 +5493,16 @@ function leaveForestExplore() {
 
     resetForestPosition();
 
-    showScreen("worldScreen");
+    showScreen(
+        "worldScreen"
+    );
 
 }
 
 
 /* ==================================================
-   電腦鍵盤控制
+   電腦鍵盤
 ================================================== */
-
-/*
-   電腦可以：
-
-   ↑ ↓ ← →
-   或
-   W A S D
-
-   操作森林。
-
-   手機和平板完全不受影響。
-*/
 
 const keyboardKeys = {};
 
@@ -4695,7 +5578,7 @@ document.addEventListener(
 
 
 /* ==================================================
-   電腦鍵盤持續移動
+   電腦持續移動
 ================================================== */
 
 function keyboardForestMovement() {
@@ -4717,13 +5600,18 @@ function keyboardForestMovement() {
         let y = 0;
 
 
+        /* =========================
+           左右
+           地圖方向與玩家方向相反
+        ========================= */
+
         if (
             keyboardKeys["arrowleft"]
             ||
             keyboardKeys["a"]
         ) {
 
-            x -= 0.6;
+            x += 0.4;
 
         }
 
@@ -4734,10 +5622,14 @@ function keyboardForestMovement() {
             keyboardKeys["d"]
         ) {
 
-            x += 0.6;
+            x -= 0.4;
 
         }
 
+
+        /* =========================
+           上下
+        ========================= */
 
         if (
             keyboardKeys["arrowup"]
@@ -4745,7 +5637,7 @@ function keyboardForestMovement() {
             keyboardKeys["w"]
         ) {
 
-            y -= 0.6;
+            y += 0.4;
 
         }
 
@@ -4756,10 +5648,14 @@ function keyboardForestMovement() {
             keyboardKeys["s"]
         ) {
 
-            y += 0.6;
+            y -= 0.4;
 
         }
 
+
+        /* =========================
+           實際移動
+        ========================= */
 
         if (
             x !== 0
@@ -4813,6 +5709,184 @@ keyboardForestMovement();
 
 
 /* ==================================================
+   ⭐ 角色創建
+================================================== */
+
+function selectGender(gender) {
+
+    player.gender =
+        gender;
+
+
+    const preview =
+        document.getElementById(
+            "characterPreview"
+        );
+
+
+    const imagePath =
+        gender === "male"
+        ? "images/player-male.png"
+        : "images/player-female.png";
+
+
+    /* 創建畫面 */
+
+    preview.src =
+        imagePath;
+
+
+    /* 性別按鈕 */
+
+    document.getElementById(
+        "femaleButton"
+    ).classList.remove(
+        "selected"
+    );
+
+
+    document.getElementById(
+        "maleButton"
+    ).classList.remove(
+        "selected"
+    );
+
+
+    if (
+        gender === "male"
+    ) {
+
+        document.getElementById(
+            "maleButton"
+        ).classList.add(
+            "selected"
+        );
+
+    }
+
+    else {
+
+        document.getElementById(
+            "femaleButton"
+        ).classList.add(
+            "selected"
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   ⭐ 建立角色
+================================================== */
+
+function createCharacter() {
+
+    const nameInput =
+        document.getElementById(
+            "playerNameInput"
+        );
+
+
+    const name =
+        nameInput.value.trim();
+
+
+    if (
+        name === ""
+    ) {
+
+        alert(
+            "請先輸入冒險者的名字！"
+        );
+
+        return;
+
+    }
+
+
+    player.name =
+        name;
+
+
+    const imagePath =
+        player.gender === "male"
+        ? "images/player-male.png"
+        : "images/player-female.png";
+
+
+    /* =========================
+       ① 世界地圖頭像
+    ========================= */
+
+    document.getElementById(
+        "playerAvatar"
+    ).src =
+        imagePath;
+
+
+    /* =========================
+       ② 冒險者資料立繪
+    ========================= */
+
+    document.getElementById(
+        "playerProfileAvatar"
+    ).src =
+        imagePath;
+
+
+    /* =========================
+       ③ 森林探索立繪
+    ========================= */
+
+    document.getElementById(
+        "explorePlayer"
+    ).src =
+        imagePath;
+
+
+    /* =========================
+       名字
+    ========================= */
+
+    document.getElementById(
+        "miniPlayerName"
+    ).textContent =
+        player.name;
+
+
+    document.getElementById(
+        "profileName"
+    ).textContent =
+        player.name;
+
+
+    /* =========================
+       儲存
+    ========================= */
+
+    localStorage.setItem(
+        "littleWorldPlayer",
+        JSON.stringify(player)
+    );
+
+
+    updatePlayerUI();
+
+
+    /* =========================
+       進入世界
+    ========================= */
+
+    showScreen(
+        "worldScreen"
+    );
+
+}
+
+
+/* ==================================================
    初始化
 ================================================== */
 
@@ -4826,4 +5900,3 @@ updateMiniMapPosition();
 
 </body>
 </html>
-```
