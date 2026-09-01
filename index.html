@@ -2024,6 +2024,186 @@ button {
 
 }
 
+/* ==================================================
+   背包
+================================================== */
+
+.inventory-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    z-index: 1000;
+
+}
+
+
+.inventory-overlay.show {
+
+    display: flex;
+
+}
+
+
+.inventory-window {
+
+    width: 85%;
+
+    max-width: 420px;
+
+    padding: 20px;
+
+    border-radius: 20px;
+
+    background: white;
+
+    box-shadow:
+        0 8px 30px
+        rgba(0, 0, 0, 0.25);
+
+}
+
+
+.inventory-title {
+
+    text-align: center;
+
+    font-size: 24px;
+
+    font-weight: bold;
+
+    margin-bottom: 20px;
+
+}
+
+
+.inventory-items {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+}
+
+
+.inventory-item {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 12px 15px;
+
+    border-radius: 12px;
+
+    background: #f3f3f3;
+
+    font-size: 18px;
+
+}
+
+
+.inventory-close-button {
+
+    display: block;
+
+    width: 100%;
+
+    margin-top: 20px;
+
+    padding: 12px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+}
+
+/* ==================================================
+   森林背包按鈕
+================================================== */
+
+.forest-inventory-button {
+
+    position: absolute;
+
+    top: 15px;
+
+    right: 15px;
+
+    width: 50px;
+
+    height: 50px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: white;
+
+    font-size: 25px;
+
+    box-shadow:
+        0 3px 10px
+        rgba(0, 0, 0, 0.2);
+
+    z-index: 100;
+
+    cursor: pointer;
+
+}
+
+/* ==================================================
+   背包按鈕
+================================================== */
+
+.global-inventory-button {
+
+    display: none;
+
+    position: fixed;
+
+    top: 15px;
+
+    right: 15px;
+
+    width: 50px;
+
+    height: 50px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: white;
+
+    font-size: 25px;
+
+    box-shadow:
+        0 3px 10px
+        rgba(0, 0, 0, 0.2);
+
+    z-index: 900;
+
+    cursor: pointer;
+
+}
+
 </style>
 </head>
 
@@ -2996,7 +3176,6 @@ button {
         alt=""
     >
 
-
     <!-- ⭐ 森林探索專用玩家立繪 -->
 
     <img
@@ -3381,6 +3560,207 @@ const player = {
 
 };
 
+    /* ==================================================
+       玩家背包
+    ================================================== */
+
+    const inventory = {
+
+        herb: 0,
+
+        wood: 0,
+
+        ore: 0,
+
+        fish: 0,
+
+        mushroom: 0
+
+    };
+
+    /* ==================================================
+       增加背包物品
+    ================================================== */
+
+        function addItem(
+            type,
+            amount = 1
+        ) {
+
+            if (
+                inventory[type] === undefined
+            ) {
+
+                inventory[type] = 0;
+
+            }
+
+
+            inventory[type] += amount;
+
+        }
+
+        /* ==================================================
+       背包
+    ================================================== */
+
+            function openInventory() {
+
+                updateInventoryUI();
+
+                document
+                    .getElementById(
+                        "inventoryOverlay"
+                    )
+                    .classList.add("show");
+
+            }
+
+
+            function closeInventory() {
+
+                document
+                    .getElementById(
+                        "inventoryOverlay"
+                    )
+                    .classList.remove("show");
+
+            }
+
+
+    /* ==================================================
+       背包按鈕顯示控制
+    ================================================== */
+
+    function updateInventoryButton() {
+
+        const button =
+            document.getElementById(
+                "globalInventoryButton"
+            );
+
+
+        if (!button) {
+
+            return;
+
+        }
+
+
+        const characterCreateScreen =
+            document.getElementById(
+                "characterCreateScreen"
+            );
+
+
+        if (
+            characterCreateScreen
+            &&
+            characterCreateScreen.classList.contains(
+                "active"
+            )
+        ) {
+
+            button.style.display =
+                "none";
+
+        }
+
+        else {
+
+            button.style.display =
+                "block";
+
+        }
+
+    }
+            /* ==================================================
+               更新背包內容
+            ================================================== */
+
+            function updateInventoryUI() {
+
+                const container =
+                    document.getElementById(
+                        "inventoryItems"
+                    );
+
+
+                if (!container) {
+
+                    return;
+
+                }
+
+
+                container.innerHTML = "";
+
+
+                const items = [
+
+                    {
+                        type: "herb",
+                        name: "藥草",
+                        icon: "🌿"
+                    },
+
+                    {
+                        type: "wood",
+                        name: "木材",
+                        icon: "🪵"
+                    },
+
+                    {
+                        type: "ore",
+                        name: "礦石",
+                        icon: "🪨"
+                    },
+
+                    {
+                        type: "fish",
+                        name: "魚",
+                        icon: "🐟"
+                    },
+
+                    {
+                        type: "mushroom",
+                        name: "蘑菇",
+                        icon: "🍄"
+                    }
+
+                ];
+
+
+                for (
+                    const item of items
+                ) {
+
+                    const element =
+                        document.createElement("div");
+
+
+                    element.className =
+                        "inventory-item";
+
+
+                    element.innerHTML =
+                        "<span>"
+                        + item.icon
+                        + " "
+                        + item.name
+                        + "</span>"
+                        + "<span>× "
+                        + inventory[item.type]
+                        + "</span>";
+
+
+                    container.appendChild(
+                        element
+                    );
+
+                }
+
+            }
 
 /* ==================================================
    怪物
@@ -3965,6 +4345,11 @@ function checkEvasion(
 
 function enterForest() {
 
+forestHasLeftStart = false;
+forestX = 0;
+forestY = 0;
+forestMoveDistance = 0;
+
     showScreen(
         "forestExploreScreen"
     );
@@ -4436,11 +4821,14 @@ function winBattle() {
     }
 
 
-    setTimeout(function() {
+	setTimeout(function() {
 
-        showScreen("forestExploreScreen");
+    		forestEncounterProtection = true;
 
-    }, 1000);
+    		showScreen("forestExploreScreen");
+
+
+	}, 1000);
 
 }
 
@@ -4655,6 +5043,8 @@ function showScreen(screenId) {
 
 
     updatePlayerUI();
+    updateInventoryButton();
+
 
 }
 
@@ -4699,17 +5089,47 @@ let forestX = 0;
 
 let forestY = 0;
 
+let forestHasLeftStart = false;
+
 /* ==================================================
    森林遇敵
 ================================================== */
 
-const forestEncounterRate = 0.10;
-
 let forestEncounterPending = false;
+
+let forestEncounterProtection = false;
 
 let forestMoveDistance = 0;
 
-const forestEncounterDistance = 16;
+const forestEncounterDistance = 35;
+
+/* ==================================================
+   從遭遇表抽取結果
+================================================== */
+
+function rollForestEncounter(region) {
+
+    const roll =
+        Math.random() * 100;
+
+    let cumulative = 0;
+
+    for (const encounter of region.encounterTable) {
+
+        cumulative += encounter.chance;
+
+        if (roll < cumulative) {
+
+            return encounter.type;
+
+        }
+
+    }
+
+    return "none";
+
+}
+
 
 /* ==================================================
    森林遇敵判定
@@ -4724,14 +5144,73 @@ function checkForestEncounter() {
     }
 
 
-    if (
-        Math.random()
-        < forestEncounterRate
-    ) {
+    /* 戰鬥後保護 */
 
-        triggerForestEncounter();
+    if (forestEncounterProtection) {
+
+        forestEncounterProtection = false;
+
+        return;
 
     }
+
+
+    const region =
+        getCurrentForestRegion();
+
+
+    if (!region) {
+
+        return;
+
+    }
+
+
+    const result =
+        rollForestEncounter(region);
+
+
+    if (result === "none") {
+
+        return;
+
+    }
+
+
+    if (result === "bat") {
+
+        determineBatCount();
+
+    }
+
+
+    triggerForestEncounter(result);
+
+}
+
+/* ==================================================
+   蝙蝠數量
+================================================== */
+
+function determineBatCount() {
+
+    const roll =
+        Math.random() * 100;
+
+
+    if (roll < 60) {
+
+        return 1;
+
+    }
+
+    if (roll < 95) {
+
+        return 2;
+
+    }
+
+    return 3;
 
 }
 
@@ -4739,7 +5218,7 @@ function checkForestEncounter() {
    發生遇敵
 ================================================== */
 
-function triggerForestEncounter() {
+function triggerForestEncounter(encounterType) {
 
     forestEncounterPending = true;
 
@@ -4764,7 +5243,7 @@ function triggerForestEncounter() {
 
         hideMessage();
 
-        startBattleFromForest();
+        startBattleFromForest(encounterType);
 
         forestEncounterPending = false;
 
@@ -4772,11 +5251,11 @@ function triggerForestEncounter() {
 
 }
 
+const forestMinX = -100;
+const forestMaxX = 100;
 
-const forestMaxX = 70;
-
-const forestMaxY = 100;
-
+const forestMinY = 0;
+const forestMaxY = 136;
 
 /* ==================================================
    森林畫面更新
@@ -4860,79 +5339,86 @@ function moveForest(
     directionY
 ) {
 
+    /* ==============================================
+       移動座標
+    ============================================== */
+
     forestX += directionX;
 
     forestY += directionY;
 
 
-    if (
-        forestX > forestMaxX
-    ) {
+    /* ==============================================
+       地圖邊界
+       
+       X：-100 ～ +100
+       Y：0 ～ +136
+    ============================================== */
 
-        forestX =
-            forestMaxX;
-
-    }
-
-
-    if (
-        forestX < -forestMaxX
-    ) {
-
-        forestX =
-            -forestMaxX;
-
-    }
+    forestX =
+        Math.max(
+            forestMinX,
+            Math.min(
+                forestMaxX,
+                forestX
+            )
+        );
 
 
-    if (
-        forestY > forestMaxY
-    ) {
+    forestY =
+        Math.max(
+            forestMinY,
+            Math.min(
+                forestMaxY,
+                forestY
+            )
+        );
 
-        forestY =
-            forestMaxY;
 
-    }
-
-
-    if (
-        forestY < -forestMaxY
-    ) {
-
-        forestY =
-            -forestMaxY;
-
-    }
-
+/* ==============================================
+   更新森林畫面
+============================================== */
 
 updateForestPosition();
 
 updateMiniMapPosition();
 
+checkDeepWorldEntrance();
 
-/* 累積探索距離 */
+checkForestStartPoint();
+
+checkForestGatherPoint();
+
+/* ==============================================
+   累積實際移動距離
+============================================== */
 
 forestMoveDistance +=
-    Math.abs(directionX)
-    +
-    Math.abs(directionY);
+    Math.sqrt(
+        directionX * directionX
+        +
+        directionY * directionY
+    );
+
+    /* ==============================================
+       累積到 40 單位後進行一次遇敵判定
+    ============================================== */
+
+    if (
+        forestMoveDistance
+        >= forestEncounterDistance
+    ) {
+
+        forestMoveDistance = 0;
+
+        checkForestEncounter();
+
+    }
 
 
-/*
-   累積到一定距離後
-   才進行一次遇敵判定
-*/
-
-if (
-    forestMoveDistance
-    >= forestEncounterDistance
-) {
-
-    forestMoveDistance = 0;
-
-    checkForestEncounter();
-
-}
+    /* ==============================================
+       玩家移動動畫
+    ============================================== */
 
     const playerImage =
         document.getElementById(
@@ -4955,7 +5441,6 @@ if (
 
 }
 
-
 /* ==================================================
    小地圖
 ================================================== */
@@ -4975,55 +5460,47 @@ function updateMiniMapPosition() {
     }
 
 
+    /*
+       森林：
+       X -100 ～ +100
+       Y 0 ～ 136
+
+       小地圖：
+       X 約 8% ～ 92%
+       Y 約 95% ～ 8%
+    */
+
+
     const mapX =
-        50
-        -
+        8
+        +
         (
-            forestX
-            / forestMaxX
-            * 42
-        );
+            (forestX - forestMinX)
+            /
+            (forestMaxX - forestMinX)
+        )
+        * 84;
 
 
     const mapY =
         95
         -
         (
-            forestY
-            / forestMaxY
-            * 87
-        );
-
-
-    const safeX =
-        Math.max(
-            8,
-            Math.min(
-                92,
-                mapX
-            )
-        );
-
-
-    const safeY =
-        Math.max(
-            8,
-            Math.min(
-                95,
-                mapY
-            )
-        );
+            (forestY - forestMinY)
+            /
+            (forestMaxY - forestMinY)
+        )
+        * 87;
 
 
     miniPlayer.style.left =
-        safeX + "%";
+        mapX + "%";
 
 
     miniPlayer.style.top =
-        safeY + "%";
+        mapY + "%";
 
 }
-
 
 /* ==================================================
    小地圖放大
@@ -5054,6 +5531,713 @@ forestMiniMap.addEventListener(
 function closeForestMap() {
 
     forestMapOverlay.classList.remove("show");
+
+}
+
+/* ==================================================
+   地圖Ⅰ：森林區域
+================================================== */
+
+/*
+   座標：
+   X：-100 ～ +100
+   Y：0 ～ 136
+
+   (0,0) = 玩家起點
+*/
+
+
+const forestRegions = {
+
+    /* ==============================================
+       ① 入口草原
+    ============================================== */
+
+    entrance: {
+
+        name: "入口草原",
+
+        encounterTable: [
+            { type: "none", chance: 70 },
+            { type: "slime", chance: 30 }
+        ],
+
+        polygon: [
+            [-68, 0],
+            [65, 0],
+            [64, 5],
+            [53, 12],
+            [40, 19],
+            [30, 25],
+            [27, 35],
+            [24, 43],
+            [5, 46],
+            [-20, 45],
+            [-55, 48],
+            [-62, 42],
+            [-67, 32],
+            [-70, 20],
+            [-68, 8]
+        ]
+
+    },
+
+
+    /* ==============================================
+       ② 中央森林
+    ============================================== */
+
+    centralForest: {
+
+        name: "中央森林",
+
+        encounterTable: [
+            { type: "none", chance: 55 },
+            { type: "slime", chance: 25 },
+            { type: "bat", chance: 15 },
+            { type: "wolf", chance: 5 }
+        ],
+
+        polygon: [
+            [-55, 48],
+            [-50, 57],
+            [-43, 69],
+            [-35, 80],
+            [-29, 83],
+            [-10, 83],
+            [5, 82],
+            [20, 81],
+            [31, 76],
+            [46, 69],
+            [43, 60],
+            [45, 48],
+            [27, 46],
+            [5, 45],
+            [-20, 45],
+            [-38, 46]
+        ]
+
+    },
+
+
+    /* ==============================================
+       ③ 左側河岸
+    ============================================== */
+
+    riverBank: {
+
+        name: "左側河岸",
+
+        encounterTable: [
+            { type: "none", chance: 65 },
+            { type: "frog", chance: 35 }
+        ],
+
+        polygon: [
+            [-100, 68],
+            [-94, 88],
+            [-82, 103],
+            [-65, 109],
+            [-50, 110],
+            [-43, 96],
+            [-35, 80],
+            [-43, 69],
+            [-50, 57],
+            [-55, 48],
+            [-62, 42],
+            [-70, 30],
+            [-80, 35],
+            [-92, 48],
+            [-100, 62]
+        ]
+
+    },
+
+
+    /* ==============================================
+       ④ 右側岩壁
+    ============================================== */
+
+    rockWall: {
+
+        name: "右側岩壁",
+
+        encounterTable: [
+            { type: "none", chance: 55 },
+            { type: "slime", chance: 25 },
+            { type: "bat", chance: 20 }
+        ],
+
+        polygon: [
+            [30, 82],
+            [45, 88],
+            [70, 100],
+            [86, 98],
+            [100, 88],
+            [105, 72],
+            [103, 55],
+            [96, 42],
+            [83, 32],
+            [68, 25],
+            [55, 27],
+            [49, 36],
+            [45, 48],
+            [46, 69],
+            [40, 76]
+        ]
+
+    },
+
+
+    /* ==============================================
+       ⑤ 深處深林
+    ============================================== */
+
+    deepForest: {
+
+        name: "深處深林",
+
+        encounterTable: [
+            { type: "none", chance: 35 },
+            { type: "slime", chance: 20 },
+            { type: "bat", chance: 20 },
+            { type: "wolf", chance: 18 },
+            { type: "bear", chance: 7 }
+        ],
+
+        polygon: [
+            [-50, 110],
+            [-43, 120],
+            [-32, 131],
+            [-20, 136],
+            [5, 136],
+            [25, 133],
+            [45, 126],
+            [63, 116],
+            [73, 105],
+            [70, 96],
+            [52, 91],
+            [45, 88],
+            [30, 82],
+            [20, 81],
+            [5, 82],
+            [-10, 83],
+            [-29, 83],
+            [-35, 80],
+            [-43, 96]
+        ]
+
+    }
+
+};
+
+/* ==================================================
+   地圖Ⅰ 採集點
+================================================== */
+
+const forestGatherPoints = [
+
+    /* ① 入口草原：藥草 */
+
+    {
+        type: "herb",
+        x: 9,
+        y: 34
+    },
+
+    {
+        type: "herb",
+        x: 44,
+        y: 39
+    },
+
+
+    /* ② 中央森林：木材 */
+
+    {
+        type: "wood",
+        x: -32,
+        y: 64
+    },
+
+    {
+        type: "wood",
+        x: -15,
+        y: 73
+    },
+
+
+    /* ③ 右側岩壁：礦石 */
+
+    {
+        type: "ore",
+        x: 43,
+        y: 45
+    },
+
+    {
+        type: "ore",
+        x: 65,
+        y: 80
+    },
+
+    {
+        type: "ore",
+        x: 70,
+        y: 62
+    },
+
+
+    /* ④ 左側河岸：魚 */
+
+    {
+        type: "fish",
+        x: -79,
+        y: 80
+    },
+
+    {
+        type: "fish",
+        x: -65,
+        y: 87
+    },
+
+
+    /* ⑤ 深處深林 */
+
+    {
+        type: "mushroom",
+        x: -12,
+        y: 127
+    },
+
+    {
+        type: "wood",
+        x: 11,
+        y: 115
+    },
+
+    {
+        type: "herb",
+        x: -8,
+        y: 101
+    }
+
+];
+
+/* ==================================================
+   已採集的採集點
+================================================== */
+
+let gatheredForestPoints = [];
+let forestGatherCooldown = [];
+
+/* ==================================================
+   採集判定
+================================================== */
+
+const forestGatherDistance = 5;
+
+/* ==================================================
+   檢查森林採集點
+================================================== */
+
+function checkForestGatherPoint() {
+
+    for (
+        let i = 0;
+        i < forestGatherPoints.length;
+        i++
+    ) {
+
+        /* 已經採集過 */
+
+        if (
+            gatheredForestPoints.includes(i)
+        ) {
+
+            continue;
+
+        }
+
+
+        const point =
+            forestGatherPoints[i];
+
+
+        const dx =
+            forestX -
+            point.x;
+
+
+        const dy =
+            forestY -
+            point.y;
+
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
+
+
+        /*
+           離開採集點後
+           解除取消後的冷卻
+        */
+
+        if (
+            distance >
+            forestGatherDistance
+        ) {
+
+            forestGatherCooldown[i] =
+                false;
+
+            continue;
+
+        }
+
+
+        /*
+           還在取消後的冷卻範圍
+        */
+
+        if (
+            forestGatherCooldown[i]
+        ) {
+
+            continue;
+
+        }
+
+
+        triggerForestGather(
+            point,
+            i
+        );
+
+        return;
+
+    }
+
+}
+
+/* ==================================================
+   發現採集物
+================================================== */
+
+function triggerForestGather(
+    point,
+    index
+) {
+
+    /* 停止鍵盤持續移動 */
+
+    keyboardKeys["arrowup"] = false;
+    keyboardKeys["arrowdown"] = false;
+    keyboardKeys["arrowleft"] = false;
+    keyboardKeys["arrowright"] = false;
+
+    keyboardKeys["w"] = false;
+    keyboardKeys["a"] = false;
+    keyboardKeys["s"] = false;
+    keyboardKeys["d"] = false;
+
+
+    let itemName = "";
+
+
+    if (point.type === "herb") {
+
+        itemName = "藥草";
+
+    }
+
+    else if (point.type === "wood") {
+
+        itemName = "木材";
+
+    }
+
+    else if (point.type === "ore") {
+
+        itemName = "礦石";
+
+    }
+
+    else if (point.type === "fish") {
+
+        itemName = "魚";
+
+    }
+
+    else if (point.type === "mushroom") {
+
+        itemName = "蘑菇";
+
+    }
+
+
+    const collect =
+        confirm(
+            "你發現了「"
+            + itemName
+            + "」！\n\n"
+            + "要採集嗎？"
+        );
+
+
+
+    if (collect) {
+
+        gatheredForestPoints.push(
+            index
+        );
+
+
+        addItem(
+            point.type,
+            1
+        );
+
+
+        showMessage(
+            "🌿 獲得「"
+            + itemName
+            + " ×1"
+        );
+
+    }
+
+else {
+
+    /* 不採 → 暫時冷卻 */
+
+    forestGatherCooldown[index] =
+        true;
+
+}
+
+}
+
+/* ==================================================
+   深界入口
+================================================== */
+
+const deepWorldEntrance = {
+
+    x: 11,
+    y: 128,
+
+    radius: 5
+
+};
+
+
+/* ==================================================
+   檢查深界入口
+================================================== */
+
+function checkDeepWorldEntrance() {
+
+    const dx =
+        forestX -
+        deepWorldEntrance.x;
+
+
+    const dy =
+        forestY -
+        deepWorldEntrance.y;
+
+
+    const distance =
+        Math.sqrt(
+            dx * dx +
+            dy * dy
+        );
+
+
+    if (
+        distance <=
+        deepWorldEntrance.radius
+    ) {
+
+        triggerDeepWorldEntrance();
+
+    }
+
+}
+
+/* ==================================================
+   深界入口暫時處理
+================================================== */
+
+function triggerDeepWorldEntrance() {
+
+    showMessage(
+        "🟣 這裡是通往深界的入口"
+    );
+
+}
+
+/* ==================================================
+   回到森林起點
+================================================== */
+
+function checkForestStartPoint() {
+
+    const distance =
+        Math.sqrt(
+            forestX * forestX
+            +
+            forestY * forestY
+        );
+
+
+    /* 已經離開起點 */
+
+    if (distance > 5) {
+
+        forestHasLeftStart = true;
+
+        return;
+
+    }
+
+
+    /* 尚未離開起點 */
+
+    if (!forestHasLeftStart) {
+
+        return;
+
+    }
+
+
+    /* 回到起點 */
+
+    showForestStartChoice();
+
+    forestHasLeftStart = false;
+
+}
+
+/* ==================================================
+   森林起點選擇
+================================================== */
+
+function showForestStartChoice() {
+
+    /* 停止鍵盤持續移動 */
+
+    keyboardKeys["arrowup"] = false;
+    keyboardKeys["arrowdown"] = false;
+    keyboardKeys["arrowleft"] = false;
+    keyboardKeys["arrowright"] = false;
+
+    keyboardKeys["w"] = false;
+    keyboardKeys["a"] = false;
+    keyboardKeys["s"] = false;
+    keyboardKeys["d"] = false;
+
+
+    const leave =
+        confirm(
+            "你回到了森林入口。\n\n"
+            + "要回到世界地圖嗎？\n\n"
+            + "按「確定」回到世界地圖\n"
+            + "按「取消」繼續探險"
+        );
+
+
+    if (leave) {
+
+        showScreen(
+            "worldScreen"
+        );
+
+    }
+
+}
+
+/* ==================================================
+   判斷座標是否位於多邊形內
+================================================== */
+
+function isPointInPolygon(x, y, polygon) {
+
+    let inside = false;
+
+    for (
+        let i = 0, j = polygon.length - 1;
+        i < polygon.length;
+        j = i++
+    ) {
+
+        const xi = polygon[i][0];
+        const yi = polygon[i][1];
+
+        const xj = polygon[j][0];
+        const yj = polygon[j][1];
+
+
+        const intersect =
+            (
+                (yi > y) !== (yj > y)
+            )
+            &&
+            (
+                x <
+                (xj - xi)
+                * (y - yi)
+                / (yj - yi)
+                + xi
+            );
+
+
+        if (intersect) {
+
+            inside = !inside;
+
+        }
+
+    }
+
+
+    return inside;
+
+}
+
+/* ==================================================
+   取得玩家目前所在區域
+================================================== */
+
+function getCurrentForestRegion() {
+
+    for (const key in forestRegions) {
+
+        const region =
+            forestRegions[key];
+
+
+        if (
+            isPointInPolygon(
+                forestX,
+                forestY,
+                region.polygon
+            )
+        ) {
+
+            return region;
+
+        }
+
+    }
+
+
+    return null;
 
 }
 
@@ -5602,30 +6786,28 @@ function keyboardForestMovement() {
 
         /* =========================
            左右
-           地圖方向與玩家方向相反
         ========================= */
 
-        if (
-            keyboardKeys["arrowleft"]
-            ||
-            keyboardKeys["a"]
-        ) {
+if (
+    keyboardKeys["arrowleft"]
+    ||
+    keyboardKeys["a"]
+) {
 
-            x += 0.4;
+    x -= 0.3;
 
-        }
+}
 
 
-        if (
-            keyboardKeys["arrowright"]
-            ||
-            keyboardKeys["d"]
-        ) {
+if (
+    keyboardKeys["arrowright"]
+    ||
+    keyboardKeys["d"]
+) {
 
-            x -= 0.4;
+    x += 0.3;
 
-        }
-
+}
 
         /* =========================
            上下
@@ -5637,7 +6819,7 @@ function keyboardForestMovement() {
             keyboardKeys["w"]
         ) {
 
-            y += 0.4;
+            y += 0.3;
 
         }
 
@@ -5648,7 +6830,7 @@ function keyboardForestMovement() {
             keyboardKeys["s"]
         ) {
 
-            y -= 0.4;
+            y -= 0.3;
 
         }
 
@@ -5897,6 +7079,42 @@ updateForestPosition();
 updateMiniMapPosition();
 
 </script>
+
+<!-- ==================================================
+     背包按鈕
+================================================== -->
+
+<button 
+    id="globalInventoryButton" 
+    class="global-inventory-button" 
+    onclick="openInventory()"
+    >
+    🎒
+</button>
+
+<!-- ==================================================
+     背包視窗
+================================================== -->
+
+<div id="inventoryOverlay" class="inventory-overlay">
+
+    <div class="inventory-window">
+
+        <div class="inventory-title">
+            🎒 背包
+        </div>
+
+
+        <div id="inventoryItems" class="inventory-items"></div>
+
+
+        <button class="inventory-close-button" onclick="closeInventory()">
+            關閉
+        </button>
+
+    </div>
+
+</div>
 
 </body>
 </html>
