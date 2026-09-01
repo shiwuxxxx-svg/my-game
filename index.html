@@ -220,6 +220,46 @@ button {
     margin-bottom: 3px;
 }
 
+/* ==================================================
+   小小鎮人物按鈕
+================================================== */
+
+.town-player-button {
+
+    position: absolute;
+
+    top: 20px;
+
+    right: 20px;
+
+    z-index: 50;
+
+}
+
+/* ==================================================
+   森林探索人物按鈕
+================================================== */
+
+.forest-player-button {
+
+    position: absolute;
+
+    top: 20px;
+
+    left: 20px;
+
+    z-index: 50;
+
+}
+
+
+.forest-player-button .player-button {
+
+    position: relative;
+
+    z-index: 51;
+
+}
 
 /* ==================================================
    地圖點擊區
@@ -2084,35 +2124,95 @@ button {
 }
 
 
+/* ==================================================
+   背包物品格子
+================================================== */
+
 .inventory-items {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 10px;
+
+    width: 100%;
+
+}
+
+/* ==================================================
+   背包單格
+================================================== */
+
+.inventory-item {
+
+    aspect-ratio: 1 / 1;
+
+    border: 2px solid #8b7355;
+
+    border-radius: 8px;
+
+    background:
+        rgba(255, 255, 255, 0.55);
 
     display: flex;
 
     flex-direction: column;
 
-    gap: 10px;
-
-}
-
-
-.inventory-item {
-
-    display: flex;
-
-    justify-content: space-between;
-
     align-items: center;
 
-    padding: 12px 15px;
+    justify-content: center;
 
-    border-radius: 12px;
+    position: relative;
 
-    background: #f3f3f3;
-
-    font-size: 18px;
+    box-sizing: border-box;
 
 }
 
+/* ==================================================
+   背包物品圖示
+================================================== */
+
+.inventory-icon {
+
+    font-size: 32px;
+
+    line-height: 1;
+
+}
+
+
+/* ==================================================
+   背包物品名稱
+================================================== */
+
+.inventory-name {
+
+    font-size: 13px;
+
+    margin-top: 5px;
+
+}
+
+
+/* ==================================================
+   背包物品數量
+================================================== */
+
+.inventory-amount {
+
+    position: absolute;
+
+    right: 5px;
+
+    bottom: 4px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+}
 
 .inventory-close-button {
 
@@ -2129,6 +2229,126 @@ button {
     border-radius: 12px;
 
     font-size: 18px;
+
+    cursor: pointer;
+
+}
+
+/* ==================================================
+   物品資訊視窗
+================================================== */
+
+.item-info-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(0, 0, 0, 0.45);
+
+    z-index: 1000;
+
+}
+
+
+.item-info-overlay.show {
+
+    display: flex;
+
+}
+
+
+.item-info-window {
+
+    width: 260px;
+
+    padding: 22px;
+
+    border: 3px solid #8b7355;
+
+    border-radius: 12px;
+
+    background: #fffaf0;
+
+    text-align: center;
+
+    box-sizing: border-box;
+
+}
+
+
+.item-info-icon {
+
+    font-size: 52px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.item-info-name {
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+    margin-bottom: 12px;
+
+}
+
+
+.item-info-description {
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+    margin-bottom: 12px;
+
+}
+
+
+.item-info-amount {
+
+    font-size: 14px;
+
+    margin-bottom: 18px;
+
+}
+
+
+.item-info-close-button {
+
+    padding: 8px 24px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+}
+
+/* ==================================================
+   使用物品按鈕
+================================================== */
+
+.item-use-button {
+
+    padding: 8px 24px;
+
+    margin-right: 8px;
+
+    border: none;
+
+    border-radius: 8px;
 
     cursor: pointer;
 
@@ -2313,12 +2533,10 @@ button {
 
     <div class="player-panel">
 
-        <button
-            class="player-button"
-            onclick="showScreen('playerScreen')"
-        >
-
-            <img
+<button
+    class="player-button"
+    onclick="openPlayerScreen('worldScreen')">
+        <img
                 id="playerAvatar"
                 src="images/player-female.png"
                 alt="玩家頭像"
@@ -2399,8 +2617,7 @@ button {
 
     <button
         class="back-button"
-        onclick="showScreen('worldScreen')"
-    >
+        onclick="showScreen(previousPlayerScreen)"    >
         ← 返回
     </button>
 
@@ -2759,6 +2976,27 @@ button {
     id="townScreen"
     class="screen town-page"
 >
+
+<!-- ==================================================
+     小小鎮：人物按鈕
+================================================== -->
+
+<div class="town-player-button">
+
+    <button
+        class="player-button"
+        onclick="openPlayerScreen('townScreen')"
+    >
+
+        <img
+            id="townPlayerAvatar"
+            src="images/player-female.png"
+            alt="玩家頭像"
+        >
+
+    </button>
+
+</div>
 
     <button
         class="back-button"
@@ -3184,6 +3422,21 @@ button {
         alt="玩家"
     >
 
+    <!-- ==================================================
+         森林探索：人物按鈕
+    ================================================== -->
+    
+    <div class="forest-player-button">
+    
+        <button class="player-button" 
+                onclick="openPlayerScreen('forestExploreScreen')"
+                >
+    
+            <img id="forestPlayerAvatar" src="images/player-female.png" alt="玩家頭像">
+    
+        </button>
+    
+    </div>
 
     <div class="forest-explore-top">
 
@@ -3525,6 +3778,23 @@ const equipment = {
 
 };
 
+/* ==================================================
+   開啟人物介面
+================================================== */
+
+function openPlayerScreen(
+    previousScreen
+) {
+
+    previousPlayerScreen =
+        previousScreen;
+
+
+    showScreen(
+        "playerScreen"
+    );
+
+}
 
 /* ==================================================
    ⭐ 唯一的玩家資料
@@ -3600,7 +3870,8 @@ const player = {
 
         }
 
-        /* ==================================================
+        /* 
+    ==================================================
        背包
     ================================================== */
 
@@ -3652,13 +3923,27 @@ const player = {
                 "characterCreateScreen"
             );
 
+        const forestScreen =
+            document.getElementById(
+                "forestScreen"
+            );
 
         if (
+
             characterCreateScreen
             &&
             characterCreateScreen.classList.contains(
                 "active"
             )
+
+            ||
+
+            forestScreen
+            &&
+            forestScreen.classList.contains(
+                "active"
+            )
+
         ) {
 
             button.style.display =
@@ -3674,94 +3959,345 @@ const player = {
         }
 
     }
-            /* ==================================================
-               更新背包內容
-            ================================================== */
+    /* ==================================================
+       更新背包內容
+    ================================================== */
 
-            function updateInventoryUI() {
+    function updateInventoryUI() {
 
-                const container =
-                    document.getElementById(
-                        "inventoryItems"
-                    );
+        const container =
+            document.getElementById(
+                "inventoryItems"
+            );
 
 
-                if (!container) {
+        if (!container) {
+
+            return;
+
+        }
+
+
+        container.innerHTML = "";
+
+
+        const items = [
+
+            {
+                type: "herb",
+                name: "藥草",
+                icon: "🌿"
+            },
+
+            {
+                type: "wood",
+                name: "木材",
+                icon: "🪵"
+            },
+
+            {
+                type: "ore",
+                name: "礦石",
+                icon: "🪨"
+            },
+
+            {
+                type: "fish",
+                name: "魚",
+                icon: "🐟"
+            },
+
+            {
+                type: "mushroom",
+                name: "蘑菇",
+                icon: "🍄"
+            }
+
+        ];
+
+
+        /* ==============================================
+           有物品的才放進背包
+        ============================================== */
+
+        const ownedItems =
+            items.filter(function (item) {
+
+                return inventory[item.type] > 0;
+
+            });
+
+
+        /* ==============================================
+           先建立 16 個空格
+        ============================================== */
+
+        for (
+            let i = 0;
+            i < 16;
+            i++
+        ) {
+
+            const element =
+                document.createElement("div");
+
+
+            element.className =
+                "inventory-item";
+
+
+            /* 有物品就放進這一格 */
+
+            if (
+                ownedItems[i]
+            ) {
+
+                const item =
+                    ownedItems[i];
+
+
+                element.innerHTML =
+
+                    "<div class='inventory-icon'>"
+                    + item.icon
+                    + "</div>"
+
+                    +
+
+                    "<div class='inventory-name'>"
+                    + item.name
+                    + "</div>"
+
+                    +
+
+                    "<div class='inventory-amount'>"
+                    + "× "
+                    + inventory[item.type]
+                    + "</div>";
+
+                    element.onclick = function () {
+
+                    openItemInfo(item);
+
+                };
+
+            }
+
+
+            container.appendChild(
+                element
+            );
+
+        }
+
+    }
+
+    /* ==================================================
+       目前查看的物品
+    ================================================== */
+
+        let selectedInventoryItem = null;
+
+    /* ==================================================
+       開啟物品資訊
+    ================================================== */
+
+        function openItemInfo(item) {
+
+            selectedInventoryItem = item;
+
+            const overlay =
+                document.getElementById(
+                    "itemInfoOverlay"
+                );
+
+
+            document.getElementById(
+                "itemInfoIcon"
+            ).textContent =
+                item.icon;
+
+
+            document.getElementById(
+                "itemInfoName"
+            ).textContent =
+                item.name;
+
+
+            document.getElementById(
+                "itemInfoDescription"
+            ).textContent =
+                getItemDescription(
+                    item.type
+                );
+
+
+            document.getElementById(
+                "itemInfoAmount"
+            ).textContent =
+                "持有數量：× "
+                + inventory[item.type];
+
+
+            overlay.classList.add(
+                "show"
+            );
+
+            const useButton =
+                document.getElementById(
+                    "itemUseButton"
+                );
+
+
+            if (
+                item.type === "herb"
+            ) {
+
+                useButton.style.display =
+                    "block";
+
+            }
+
+            else {
+
+                useButton.style.display =
+                    "none";
+
+            }
+
+        }
+
+
+        /* ==================================================
+           關閉物品資訊
+        ================================================== */
+
+        function closeItemInfo() {
+
+            const overlay =
+                document.getElementById(
+                    "itemInfoOverlay"
+                );
+
+
+            overlay.classList.remove(
+                "show"
+            );
+
+        }
+
+        /* ==================================================
+       使用物品
+    ================================================== */
+
+            function useSelectedItem() {
+
+                if (
+                    !selectedInventoryItem
+                ) {
 
                     return;
 
                 }
 
 
-                container.innerHTML = "";
+                const type =
+                    selectedInventoryItem.type;
 
 
-                const items = [
+                /* ==============================================
+                   藥草
+                ============================================== */
 
-                    {
-                        type: "herb",
-                        name: "藥草",
-                        icon: "🌿"
-                    },
-
-                    {
-                        type: "wood",
-                        name: "木材",
-                        icon: "🪵"
-                    },
-
-                    {
-                        type: "ore",
-                        name: "礦石",
-                        icon: "🪨"
-                    },
-
-                    {
-                        type: "fish",
-                        name: "魚",
-                        icon: "🐟"
-                    },
-
-                    {
-                        type: "mushroom",
-                        name: "蘑菇",
-                        icon: "🍄"
-                    }
-
-                ];
-
-
-                for (
-                    const item of items
+                if (
+                    type === "herb"
                 ) {
 
-                    const element =
-                        document.createElement("div");
+                    if (
+                        inventory.herb <= 0
+                    ) {
+
+                        return;
+
+                    }
 
 
-                    element.className =
-                        "inventory-item";
+                    const stats =
+                        getPlayerStats();
 
 
-                    element.innerHTML =
-                        "<span>"
-                        + item.icon
-                        + " "
-                        + item.name
-                        + "</span>"
-                        + "<span>× "
-                        + inventory[item.type]
-                        + "</span>";
+                    const oldHp =
+                        player.currentHp;
 
 
-                    container.appendChild(
-                        element
+                    player.currentHp =
+                        Math.min(
+                            stats.maxHp,
+                            player.currentHp + 10
+                        );
+
+
+                    inventory.herb--;
+
+
+                    updatePlayerUI();
+
+                    updateInventoryUI();
+
+
+                    const recovered =
+                        player.currentHp -
+                        oldHp;
+
+
+                    showMessage(
+                        "🌿 使用了藥草！"
+                        + " HP 恢復 "
+                        + recovered
+                        + "！"
                     );
+
+
+                    closeItemInfo();
 
                 }
 
             }
 
+        /* ==================================================
+           物品說明
+        ================================================== */
+
+        function getItemDescription(type) {
+
+            const descriptions = {
+
+                herb:
+                    "森林中常見的藥草。",
+
+                wood:
+                    "森林中的木材，可以作為製作材料。",
+
+                ore:
+                    "從岩壁中採集的礦石。",
+
+                fish:
+                    "在河岸附近捕獲的魚。",
+
+                mushroom:
+                    "生長在深處森林中的蘑菇。"
+
+            };
+
+
+            return (
+                descriptions[type]
+                ||
+                "沒有相關說明。"
+            );
+
+        }
+    
 /* ==================================================
    怪物
 ================================================== */
@@ -4338,6 +4874,23 @@ function checkEvasion(
 
 }
 
+/* ==================================================
+   開啟人物介面
+================================================== */
+
+function openPlayerScreen(
+    previousScreen
+) {
+
+    previousPlayerScreen =
+        previousScreen;
+
+
+    showScreen(
+        "playerScreen"
+    );
+
+}
 
 /* ==================================================
    進入森林
@@ -5090,6 +5643,12 @@ let forestX = 0;
 let forestY = 0;
 
 let forestHasLeftStart = false;
+
+/* ==================================================
+   人物介面進入前的畫面
+================================================== */
+
+let previousPlayerScreen = "worldScreen";
 
 /* ==================================================
    森林遇敵
@@ -7027,6 +7586,33 @@ function createCharacter() {
     ).src =
         imagePath;
 
+    /* =========================
+    ④ 森林探索人物按鈕
+    ========================= */
+
+    document.getElementById(
+        "forestPlayerAvatar"
+    ).src =
+        imagePath;
+
+    /* =========================
+    ④ 森林探索人物頭像
+    ========================= */
+
+    document.getElementById(
+        "forestPlayerAvatar"
+    ).src =
+        imagePath;
+
+
+    /* =========================
+    ⑤ 小小鎮人物頭像
+    ========================= */
+
+    document.getElementById(
+        "townPlayerAvatar"
+    ).src =
+        imagePath;
 
     /* =========================
        名字
@@ -7105,13 +7691,51 @@ updateMiniMapPosition();
         </div>
 
 
-        <div id="inventoryItems" class="inventory-items"></div>
+    <div id="inventoryItems" class="inventory-items">
+    </div>
 
 
         <button class="inventory-close-button" onclick="closeInventory()">
             關閉
         </button>
 
+        <!-- ==================================================
+             物品資訊視窗
+        ================================================== -->
+        
+        <div id="itemInfoOverlay" class="item-info-overlay">
+        
+            <div class="item-info-window">
+        
+                <div id="itemInfoIcon" class="item-info-icon"></div>
+        
+        
+                <div id="itemInfoName" class="item-info-name"></div>
+        
+        
+                <div id="itemInfoDescription" class="item-info-description"></div>
+        
+        
+                <div id="itemInfoAmount" class="item-info-amount"></div>
+        
+                <button
+                      id="itemUseButton"
+                      class="item-use-button"
+                      onclick="useSelectedItem()"
+                >
+                      使用
+                </button>
+        
+                <button 
+                    class="item-info-close-button"
+                    onclick="closeItemInfo()"
+                >
+                    關閉
+                </button>
+        
+            </div>
+        
+        </div>
     </div>
 
 </div>
