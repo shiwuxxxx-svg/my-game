@@ -103,36 +103,75 @@ button {
     display: block;
 }
 
-
 /* ==================================================
    世界地圖
 ================================================== */
 
 #worldScreen {
 
+    position: relative;
+
     width: 100%;
     height: 100vh;
+    height: 100dvh;
 
     min-height: 100vh;
-
-    position: relative;
+    min-height: 100dvh;
 
     overflow: hidden;
 
-    background: #f8f3e8;
+    padding: 0;
 }
 
 .world-map-image {
 
-    width: 100%;
-    height: 100vh;
+    position: absolute;
 
-    display: block;
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
 
     object-fit: cover;
     object-position: center center;
+
+    display: block;
+
+    user-select: none;
+    -webkit-user-drag: none;
+
+    z-index: 1;
+
+    pointer-events: none;
 }
 
+/* ==================================================
+   世界地圖點擊區
+================================================== */
+
+.map-location {
+
+    position: absolute;
+
+    width: 70px;
+    height: 70px;
+
+    padding: 0;
+    margin: 0;
+
+    border: none;
+
+    background: transparent;
+
+    z-index: 50;
+
+    transform: translate(-50%, -50%);
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+}
 
 /* ==================================================
    左上角人物資訊
@@ -259,73 +298,6 @@ button {
 
     z-index: 51;
 
-}
-
-/* ==================================================
-   地圖點擊區
-================================================== */
-
-.map-location {
-
-    position: absolute;
-
-    background: transparent;
-
-    border: none;
-
-    z-index: 10;
-
-    padding: 0;
-}
-
-
-.town-location {
-
-    left: 18%;
-    top: 29%;
-
-    width: 22%;
-    height: 14%;
-}
-
-
-.forest-location {
-
-    left: 20%;
-    top: 40%;
-
-    width: 25%;
-    height: 20%;
-}
-
-
-.castle-location {
-
-    left: 37%;
-    top: 8%;
-
-    width: 25%;
-    height: 18%;
-}
-
-
-.port-location {
-
-    left: 5%;
-    top: 65%;
-
-    width: 30%;
-    height: 18%;
-}
-
-
-.desert-location {
-
-    left: 58%;
-    top: 57%;
-
-    width: 35%;
-    height: 28%;
 }
 
 
@@ -2424,6 +2396,7 @@ button {
 
 }
 
+
 </style>
 </head>
 
@@ -2514,7 +2487,6 @@ button {
 
 </div>
 
-
 <!-- ==================================================
      世界地圖
 ================================================== -->
@@ -2533,15 +2505,15 @@ button {
 
     <div class="player-panel">
 
-<button
-    class="player-button"
-    onclick="openPlayerScreen('worldScreen')">
-        <img
+        <button
+            class="player-button"
+            onclick="openPlayerScreen('worldScreen')"
+        >
+            <img
                 id="playerAvatar"
                 src="images/player-female.png"
                 alt="玩家頭像"
             >
-
         </button>
 
 
@@ -2554,11 +2526,9 @@ button {
                 冒險者
             </div>
 
-
             <div id="miniLevel">
                 Lv. 1
             </div>
-
 
             <div id="miniHp">
                 ❤️ 30 / 30
@@ -2569,38 +2539,87 @@ button {
     </div>
 
 
+    <!-- =========================
+         世界地圖地點
+    ========================== -->
+
+    <!-- ① 小小鎮 -->
     <button
-        class="map-location town-location"
+        class="map-location"
+        data-map-x="150"
+        data-map-y="380"
         onclick="showScreen('townScreen')"
-        aria-label="進入小小鎮"
+        aria-label="小小鎮"
     ></button>
 
 
+    <!-- ② 迷霧森林 -->
     <button
-        class="map-location forest-location"
+        class="map-location"
+        data-map-x="305"
+        data-map-y="465"
         onclick="enterForest()"
-        aria-label="進入森林"
+        aria-label="迷霧森林"
     ></button>
 
 
+    <!-- ③ 港口 -->
     <button
-        class="map-location castle-location"
-        onclick="showMessage('黑暗古堡目前還無法進入')"
-        aria-label="黑暗古堡"
-    ></button>
-
-
-    <button
-        class="map-location port-location"
+        class="map-location"
+        data-map-x="111"
+        data-map-y="655"
         onclick="showMessage('港口目前還沒有開放')"
         aria-label="港口"
     ></button>
 
 
+    <!-- ④ 王城 -->
     <button
-        class="map-location desert-location"
+        class="map-location"
+        data-map-x="280"
+        data-map-y="305"
+        onclick="showMessage('王城目前還無法前往')"
+        aria-label="王城"
+    ></button>
+
+
+    <!-- ⑤ 魔王城 -->
+    <button
+        class="map-location"
+        data-map-x="491"
+        data-map-y="210"
+        onclick="showMessage('魔王城目前還無法前往')"
+        aria-label="魔王城"
+    ></button>
+
+
+    <!-- ⑥ 沙漠 -->
+    <button
+        class="map-location"
+        data-map-x="430"
+        data-map-y="670"
         onclick="showMessage('沙漠目前太危險了')"
         aria-label="沙漠"
+    ></button>
+
+
+    <!-- ⑦ 雪山 -->
+    <button
+        class="map-location"
+        data-map-x="419"
+        data-map-y="330"
+        onclick="showMessage('雪山目前還無法前往')"
+        aria-label="雪山"
+    ></button>
+
+
+    <!-- ⑧ 近郊森林 -->
+    <button
+        class="map-location"
+        data-map-x="85"
+        data-map-y="465"
+        onclick="showMessage('近郊森林目前還沒有開放')"
+        aria-label="近郊森林"
     ></button>
 
 </div>
@@ -3759,6 +3778,142 @@ button {
 
 
 <script>
+
+/* ==================================================
+   世界地圖座標系統
+================================================== */
+
+const WORLD_MAP_WIDTH = 559;
+const WORLD_MAP_HEIGHT = 1001;
+
+
+function updateWorldMapLocations() {
+
+    const screen =
+        document.getElementById("worldScreen");
+
+    const map =
+        screen.querySelector(".world-map-image");
+
+    const locations =
+        screen.querySelectorAll(".map-location");
+
+
+    if (!screen || !map) {
+        return;
+    }
+
+
+    const screenWidth =
+        screen.clientWidth;
+
+    const screenHeight =
+        screen.clientHeight;
+
+
+    /*
+       object-fit: cover 的縮放比例
+    */
+    const scale = Math.max(
+        screenWidth / WORLD_MAP_WIDTH,
+        screenHeight / WORLD_MAP_HEIGHT
+    );
+
+
+    /*
+       圖片實際顯示尺寸
+    */
+    const displayedWidth =
+        WORLD_MAP_WIDTH * scale;
+
+    const displayedHeight =
+        WORLD_MAP_HEIGHT * scale;
+
+
+    /*
+       object-position: center center
+       所以圖片超出的部分平均裁切
+    */
+    const offsetX =
+        (screenWidth - displayedWidth) / 2;
+
+    const offsetY =
+        (screenHeight - displayedHeight) / 2;
+
+
+    locations.forEach(location => {
+
+        const mapX =
+            Number(location.dataset.mapX);
+
+        const mapY =
+            Number(location.dataset.mapY);
+
+
+        /*
+           世界地圖座標
+           ↓
+           實際螢幕座標
+        */
+        const x =
+            mapX * scale + offsetX;
+
+        const y =
+            mapY * scale + offsetY;
+
+
+        location.style.left =
+            `${x}px`;
+
+        location.style.top =
+            `${y}px`;
+
+    });
+
+}
+
+
+/* ==================================================
+   初始化
+================================================== */
+
+function initWorldMap() {
+
+    const map =
+        document.querySelector(".world-map-image");
+
+
+    if (!map) {
+        return;
+    }
+
+
+    if (map.complete) {
+
+        updateWorldMapLocations();
+
+    } else {
+
+        map.addEventListener(
+            "load",
+            updateWorldMapLocations
+        );
+
+    }
+
+}
+
+
+window.addEventListener(
+    "load",
+    initWorldMap
+);
+
+
+window.addEventListener(
+    "resize",
+    updateWorldMapLocations
+);
 
 /* ==================================================
    裝備
@@ -5582,9 +5737,18 @@ function showScreen(screenId) {
     );
 
 
-    document.getElementById(
-        screenId
-    ).classList.add(
+    const target =
+        document.getElementById(
+            screenId
+        );
+
+
+    if (!target) {
+        return;
+    }
+
+
+    target.classList.add(
         "active"
     );
 
@@ -5598,6 +5762,22 @@ function showScreen(screenId) {
     updatePlayerUI();
     updateInventoryButton();
 
+
+    /* ==================================================
+       世界地圖顯示後重新計算地點位置
+    ================================================== */
+
+    if (screenId === "worldScreen") {
+
+        requestAnimationFrame(
+            function() {
+
+                updateWorldMapLocations();
+
+            }
+        );
+
+    }
 
 }
 
