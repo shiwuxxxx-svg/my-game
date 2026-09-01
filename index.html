@@ -58,6 +58,17 @@ button {
     touch-action: manipulation;
 }
 
+/* ==================================================
+   按鈕焦點外框
+================================================== */
+
+button:focus {
+    outline: none;
+}
+
+button:focus-visible {
+    outline: none;
+}
 
 /* ==================================================
    遊戲主容器
@@ -876,34 +887,25 @@ button {
 
 
 /* ==================================================
-   森林上方 UI
+   森林UI
 ================================================== */
 
 .forest-explore-top {
 
     position: absolute;
 
-    top:
+    left: 20px;
+
+    bottom:
         max(
-            15px,
-            env(safe-area-inset-top)
+            30px,
+            env(safe-area-inset-bottom)
         );
-
-    left: 15px;
-
-    right: 15px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: flex-start;
 
     z-index: 20;
 
     pointer-events: none;
 }
-
 
 .forest-explore-title {
 
@@ -1248,8 +1250,10 @@ button {
 
     bottom:
         max(
-            30px,
-            env(safe-area-inset-bottom)
+            100px,
+            calc(
+                env(safe-area-inset-bottom) + 70px
+            )
         );
 
     z-index: 20;
@@ -3771,7 +3775,7 @@ button {
     <br>
 
     <small>
-        點擊關閉
+        點擊任意位置關閉
     </small>
 
 </div>
@@ -5786,22 +5790,41 @@ function showScreen(screenId) {
    訊息
 ================================================== */
 
-function showMessage(text) {
+function showMessage(message) {
 
     document.getElementById(
         "messageText"
-    ).textContent =
-        text;
-
+    ).textContent = message;
 
     document.getElementById(
         "messageBox"
-    ).classList.add(
-        "show"
-    );
+    ).classList.add("show");
 
 }
 
+function showMessage(message) {
+
+    document.getElementById(
+        "messageText"
+    ).textContent = message;
+
+    document.getElementById(
+        "messageBox"
+    ).classList.add("show");
+
+
+    /* 防止開啟提示的那一下點擊，
+       立刻又把提示關掉 */
+
+    messageClickReady = false;
+
+    setTimeout(function() {
+
+        messageClickReady = true;
+
+    }, 100);
+
+}
 
 function hideMessage() {
 
@@ -5813,6 +5836,58 @@ function hideMessage() {
 
 }
 
+/* ==================================================
+   提示訊息：點擊任意位置關閉
+================================================== */
+
+let messageClickReady = false;
+
+
+document.addEventListener(
+    "click",
+    function() {
+
+        const messageBox =
+            document.getElementById("messageBox");
+
+        if (
+            messageBox &&
+            messageBox.classList.contains("show") &&
+            messageClickReady
+        ) {
+
+            hideMessage();
+
+        }
+
+    }
+);
+
+/* ==================================================
+   提示訊息：任意鍵關閉
+================================================== */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        const messageBox =
+            document.getElementById("messageBox");
+
+        if (
+            messageBox &&
+            messageBox.classList.contains("show")
+        ) {
+
+            event.preventDefault();
+
+            hideMessage();
+
+        }
+
+    },
+    true
+);
 
 /* ==================================================
    森林探索
