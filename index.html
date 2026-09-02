@@ -19,6 +19,14 @@
 
     <div id="game">
 
+        <!-- ==================================================
+            🕐 遊戲時間
+        ================================================== -->
+
+        <div id="gameTime">
+            第 1 天　08:00
+        </div>
+
 
         <!-- ==================================================
              角色創建
@@ -455,10 +463,9 @@
 
             </div>
 
-            <button class="back-button" onclick="showScreen('worldScreen')">
+            <button class="back-button town-back-button" onclick="showScreen('worldScreen')">
                 ← 世界地圖
             </button>
-
 
             <h1 class="page-title">
                 小小鎮
@@ -509,12 +516,6 @@
                     酒館
                 </button>
 
-
-                <button class="location-button" onclick="showScreen('worldScreen')">
-                    🗺️<br>
-                    離開小鎮
-                </button>
-
             </div>
 
         </div>
@@ -561,7 +562,6 @@
 
         </div>
 
-
         <!-- ==================================================
             冒險者公會
         ================================================== -->
@@ -588,7 +588,26 @@
                 </p>
 
 
-                <button class="action-button" onclick="showMessage('目前還沒有新的任務')">
+                <div class="adventurer-status">
+
+                    <div>
+                        🏅 冒險者等級：
+                        <strong id="adventurerRank">
+                            初心者
+                        </strong>
+                    </div>
+
+                    <div>
+                        📈 冒險者經驗：
+                        <strong id="adventurerExp">
+                            0 / 30
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <button class="action-button" onclick="openGuildQuests()">
                     📜 查看任務
                 </button>
 
@@ -596,6 +615,78 @@
 
         </div>
 
+        <!-- ==================================================
+    公會委託列表
+================================================== -->
+
+        <div id="guildQuestOverlay" class="inventory-overlay">
+
+            <div class="inventory-window guild-window">
+
+                <h2 class="inventory-title">
+                    📜 公會委託
+                </h2>
+
+                <div id="guildQuestList">
+                </div>
+
+                <button class="action-button" onclick="closeGuildQuests()">
+                    ← 返回
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+    委託詳細資訊
+================================================== -->
+
+        <div id="guildQuestInfoOverlay" class="item-info-overlay">
+
+            <div class="item-info-window">
+
+                <div id="guildQuestInfoIcon" class="item-info-icon">
+                </div>
+
+                <h2 id="guildQuestInfoName">
+                    收集藥草
+                </h2>
+
+                <p>
+                    🟢 初級委託
+                </p>
+
+                <hr>
+
+                <p id="guildQuestInfoRequirement">
+                    需求：藥草 ×3
+                </p>
+
+                <p id="guildQuestInfoOwned">
+                    目前持有：×5
+                </p>
+
+                <p id="guildQuestInfoReward">
+                    💰 報酬：25 G
+                </p>
+
+                <p id="guildQuestInfoExp">
+                    📈 冒險者經驗：+10
+                </p>
+
+                <button id="guildQuestCompleteButton" class="action-button" onclick="completeSelectedGuildQuest()">
+                    📦 完成委託
+                </button>
+
+                <button class="action-button" onclick="closeGuildQuestInfo()">
+                    ← 返回委託列表
+                </button>
+
+            </div>
+
+        </div>
 
         <!-- ==================================================
             道具店
@@ -607,36 +698,138 @@
                 ← 小小鎮
             </button>
 
-
             <h1 class="page-title">
                 道具店
             </h1>
 
-
             <div class="location-card">
 
                 <div class="big-icon">
-                    🧪
+                    🛒
                 </div>
 
-
                 <p>
-                    「冒險前記得準備藥水喔！」
+                    「歡迎光臨！需要什麼嗎？」
                 </p>
 
+                <button class="action-button" onclick="openBuyShop()">
+                    🛍️ 購買商品
+                </button>
 
-                <button class="action-button" onclick="showMessage('獲得了紅色藥水！')">
-                    購買紅色藥水
+                <button class="action-button" onclick="openSellShop()">
+                    💰 出售物品
                 </button>
 
             </div>
 
         </div>
 
+        <div id="buyShopOverlay" class="item-info-overlay">
+
+            <div class="item-info-window">
+                <h2>
+                    🛍️ 購買商品
+                </h2>
+
+                <button class="action-button" onclick="buyItem('redPotion')">
+                    🧪 小紅藥水　20 G
+                </button>
+
+                <button class="action-button" onclick="buyItem('bluePotion')">
+                    🔵 小藍藥水　20 G
+                </button>
+
+                <button class="action-button" onclick="closeBuyShop()">
+                    ← 返回
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="sellShopOverlay" class="inventory-overlay">
+
+            <div class="inventory-window">
+
+                <h2 class="inventory-title">
+                    💰 出售物品
+                </h2>
+
+                <div id="sellShopItems" class="inventory-items">
+                </div>
+
+                <button class="action-button" onclick="closeSellShop()">
+                    ← 返回
+                </button>
+
+            </div>
+
+        </div>
 
         <!-- ==================================================
-     武器店
-================================================== -->
+            出售確認視窗
+        ================================================== -->
+
+        <div id="sellInfoOverlay" class="item-info-overlay">
+
+            <div class="item-info-window">
+
+                <div id="sellInfoIcon" class="item-info-icon">
+                </div>
+
+                <h2 id="sellInfoName">
+                    藥草
+                </h2>
+
+                <p id="sellInfoAmount">
+                    持有數量：× 1
+                </p>
+
+                <p id="sellInfoPrice">
+                    收購價格：5 G / 個
+                </p>
+
+                <hr>
+
+                <p>
+                    出售數量
+                </p>
+
+                <div class="sell-quantity">
+
+                    <button class="quantity-button" onclick="changeSellAmount(-1)">
+                        −
+                    </button>
+
+                    <span id="sellQuantity">
+                        1
+                    </span>
+
+                    <button class="quantity-button" onclick="changeSellAmount(1)">
+                        ＋
+                    </button>
+
+                </div>
+
+                <p id="sellTotalPrice">
+                    預計獲得：5 G
+                </p>
+
+                <button class="action-button" onclick="confirmSellItem()">
+                    💰 確認出售
+                </button>
+
+                <button class="action-button" onclick="closeSellInfo()">
+                    ← 取消
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- ==================================================
+            武器店
+        ================================================== -->
 
         <div id="weaponShopScreen" class="screen page">
 
@@ -735,13 +928,8 @@
                 </p>
 
 
-                <p>
-                    「在這裡好好休息一下吧。」
-                </p>
-
-
-                <button class="action-button" onclick="restAtHospital()">
-                    🛏️ 休養
+                <button class="action-button" onclick="visitDoctor()">
+                    🩺 看醫生
                 </button>
 
 
