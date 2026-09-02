@@ -1171,10 +1171,44 @@
                     </button>
 
 
+                    <button id="itemButton" class="action-button" onclick="openBattleItems()">
+                        🎒 道具
+                    </button>
+
+
+                    <button id="escapeButton" class="action-button" onclick="escapeBattle()">
+                        🏃 逃跑
+                    </button>
+
+
                     <button id="newEnemyButton" class="action-button" onclick="console.log('按到了'); startNewBattle()">
                         👾 尋找下一隻怪物
                     </button>
 
+                </div>
+
+                <!-- ==================================================
+     戰鬥道具視窗
+================================================== -->
+
+                <div id="battleItemOverlay" class="inventory-overlay">
+
+                    <div class="inventory-window">
+
+                        <div class="inventory-title">
+                            🎒 使用道具
+                        </div>
+
+
+                        <div id="battleItemList" class="inventory-items">
+                        </div>
+
+
+                        <button class="inventory-close-button" onclick="closeBattleItems()">
+                            ← 返回
+                        </button>
+
+                    </div>
 
                 </div>
 

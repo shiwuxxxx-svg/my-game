@@ -1,4 +1,3 @@
-// Git sync test
 
 /* ==================================================
      世界地圖座標系統
@@ -1828,6 +1827,371 @@ const monsters = [
 
 ];
 
+/* ==================================================
+   戰鬥道具
+================================================== */
+
+/* ==============================================
+   開啟戰鬥道具
+============================================== */
+
+function openBattleItems() {
+
+    if (
+        !battleActive
+        ||
+        battleOver
+    ) {
+
+        return;
+
+    }
+
+
+    const attackButton =
+        document.getElementById(
+            "attackButton"
+        );
+
+    const itemButton =
+        document.getElementById(
+            "itemButton"
+        );
+
+    const escapeButton =
+        document.getElementById(
+            "escapeButton"
+        );
+
+
+    /* 暫停玩家操作 */
+
+    attackButton.disabled = true;
+    itemButton.disabled = true;
+    escapeButton.disabled = true;
+
+
+    const container =
+        document.getElementById(
+            "battleItemList"
+        );
+
+
+    container.innerHTML = "";
+
+
+    /* ==============================================
+       可以在戰鬥中使用的道具
+    ============================================== */
+
+    const battleItems = [
+
+        {
+            type: "redPotion",
+            name: "小紅藥水",
+            icon: "🧪",
+            description: "恢復 20 HP"
+        },
+
+        {
+            type: "bluePotion",
+            name: "小藍藥水",
+            icon: "🔵",
+            description: "恢復 10 MP"
+        }
+
+    ];
+
+
+    const usableItems =
+        battleItems.filter(function (item) {
+
+            return inventory[item.type] > 0;
+
+        });
+
+
+    /* ==============================================
+       沒有道具
+    ============================================== */
+
+    if (
+        usableItems.length === 0
+    ) {
+
+        container.innerHTML =
+            "<p style='text-align:center;'>"
+            + "沒有可以使用的道具。"
+            + "</p>";
+
+        return;
+
+    }
+
+
+    /* ==============================================
+       建立道具
+    ============================================== */
+
+    usableItems.forEach(function (item) {
+
+        const element =
+            document.createElement("div");
+
+
+        element.className =
+            "inventory-item";
+
+
+        element.innerHTML =
+
+            "<div class='inventory-icon'>"
+            + item.icon
+            + "</div>"
+
+            +
+
+            "<div class='inventory-name'>"
+            + item.name
+            + "</div>"
+
+            +
+
+            "<div class='inventory-amount'>"
+            + "× "
+            + inventory[item.type]
+            + "</div>"
+
+            +
+
+            "<div class='inventory-description'>"
+            + item.description
+            + "</div>";
+
+
+        element.onclick =
+            function () {
+
+                useBattleItem(
+                    item.type
+                );
+
+            };
+
+
+        container.appendChild(
+            element
+        );
+
+    });
+
+
+    document
+        .getElementById(
+            "battleItemOverlay"
+        )
+        .classList.add("show");
+
+}
+
+
+/* ==============================================
+   關閉戰鬥道具
+============================================== */
+
+function closeBattleItems() {
+
+    document
+        .getElementById(
+            "battleItemOverlay"
+        )
+        .classList.remove("show");
+
+
+    /* 如果還在戰鬥，就恢復玩家操作 */
+
+    if (
+        battleActive
+        &&
+        !battleOver
+    ) {
+
+        document.getElementById(
+            "attackButton"
+        ).disabled = false;
+
+
+        document.getElementById(
+            "itemButton"
+        ).disabled = false;
+
+
+        document.getElementById(
+            "escapeButton"
+        ).disabled = false;
+
+    }
+
+}
+
+
+/* ==============================================
+   使用戰鬥道具
+============================================== */
+
+function useBattleItem(type) {
+
+    if (
+        !battleActive
+        ||
+        battleOver
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !inventory[type]
+        ||
+        inventory[type] <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const stats =
+        getPlayerStats();
+
+
+    let message = "";
+
+
+    /* ==============================================
+       小紅藥水
+    ============================================== */
+
+    if (
+        type === "redPotion"
+    ) {
+
+        const oldHp =
+            player.currentHp;
+
+
+        player.currentHp =
+            Math.min(
+                stats.maxHp,
+                player.currentHp + 20
+            );
+
+
+        const recovered =
+            player.currentHp - oldHp;
+
+
+        inventory.redPotion--;
+
+
+        message =
+            "🧪 使用了小紅藥水！<br>"
+            + "HP 恢復 "
+            + "<strong>"
+            + recovered
+            + "</strong>"
+            + "！";
+
+    }
+
+
+    /* ==============================================
+       小藍藥水
+    ============================================== */
+
+    else if (
+        type === "bluePotion"
+    ) {
+
+        const oldMp =
+            player.currentMp;
+
+
+        player.currentMp =
+            Math.min(
+                stats.maxMp,
+                player.currentMp + 10
+            );
+
+
+        const recovered =
+            player.currentMp - oldMp;
+
+
+        inventory.bluePotion--;
+
+
+        message =
+            "🔵 使用了小藍藥水！<br>"
+            + "MP 恢復 "
+            + "<strong>"
+            + recovered
+            + "</strong>"
+            + "！";
+
+    }
+
+
+    else {
+
+        return;
+
+    }
+
+
+    /* 更新玩家狀態 */
+
+    updatePlayerUI();
+
+
+    updateInventoryUI();
+
+
+    /* 關閉道具視窗 */
+
+    document
+        .getElementById(
+            "battleItemOverlay"
+        )
+        .classList.remove("show");
+
+
+    /* 顯示戰鬥訊息 */
+
+    document.getElementById(
+        "battleLog"
+    ).innerHTML =
+        message;
+
+
+    /* ==============================================
+       使用道具算一次行動
+       → 怪物反擊
+    ============================================== */
+
+    setTimeout(
+        function () {
+
+            enemyAttack();
+
+        },
+        500
+    );
+
+}
+
 
 let currentEnemy = null;
 
@@ -2509,6 +2873,26 @@ function startNewBattle(encounterType) {
         "block";
 
     document.getElementById(
+        "escapeButton"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "escapeButton"
+    ).disabled =
+        false;
+
+    document.getElementById(
+        "itemButton"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "itemButton"
+    ).disabled =
+        false;
+
+    document.getElementById(
         "levelUpBox"
     ).classList.remove(
         "show"
@@ -2838,6 +3222,129 @@ function attackEnemy() {
 
 }
 
+/* ==================================================
+   玩家逃跑
+================================================== */
+
+function escapeBattle() {
+
+    if (
+        !battleActive
+        ||
+        battleOver
+    ) {
+
+        return;
+
+    }
+
+
+    const escapeButton =
+        document.getElementById(
+            "escapeButton"
+        );
+
+
+    const attackButton =
+        document.getElementById(
+            "attackButton"
+        );
+
+
+    /* 防止重複點擊 */
+
+    escapeButton.disabled = true;
+    attackButton.disabled = true;
+
+
+    /* ==================================================
+       60% 逃跑成功率
+    ================================================== */
+
+    const success =
+        Math.random() < 0.60;
+
+
+    if (success) {
+
+        /* ==============================================
+           逃跑成功
+        ============================================== */
+
+        battleActive = false;
+        battleOver = true;
+
+
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
+            "🏃 你成功逃離了戰鬥！";
+
+
+        escapeButton.style.display =
+            "none";
+
+
+        attackButton.style.display =
+            "none";
+
+
+        document.getElementById(
+            "newEnemyButton"
+        ).style.display =
+            "none";
+
+
+        /* 回到森林探索 */
+
+        setTimeout(
+            function () {
+
+                forestEncounterProtection = true;
+
+                showScreen(
+                    "forestExploreScreen"
+                );
+
+            },
+            500
+        );
+
+    }
+
+
+    else {
+
+        /* ==============================================
+           逃跑失敗
+        ============================================== */
+
+        document.getElementById(
+            "battleLog"
+        ).innerHTML =
+            "🏃 你試圖逃跑……<br>"
+            + "但失敗了！";
+
+
+        /* 怪物反擊 */
+
+        setTimeout(
+            function () {
+
+                enemyAttack();
+
+                /*
+                   怪物攻擊結束後，
+                   escapeButton 會重新啟用
+                */
+
+            },
+            500
+        );
+
+    }
+
+}
 
 /* ==================================================
    怪物攻擊
@@ -2890,6 +3397,7 @@ function enemyAttack() {
     ) {
 
         attackingEnemyIndex = 0;
+
 
 
         document.getElementById(
@@ -3057,6 +3565,15 @@ function enemyAttack() {
             "attackButton"
         ).disabled = false;
 
+
+        document.getElementById(
+            "escapeButton"
+        ).disabled = false;
+
+        document.getElementById(
+            "itemButton"
+        ).disabled = false;
+
     }
 
 }
@@ -3079,6 +3596,15 @@ function winBattle() {
     ).style.display =
         "none";
 
+    document.getElementById(
+        "itemButton"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "escapeButton"
+    ).style.display =
+        "none";
 
     document.getElementById(
         "newEnemyButton"
@@ -3224,6 +3750,14 @@ function loseBattle() {
 
     document
         .getElementById("attackButton")
+        .style.display = "none";
+
+    document
+        .getElementById("itemButton")
+        .style.display = "none";
+
+    document
+        .getElementById("escapeButton")
         .style.display = "none";
 
 
