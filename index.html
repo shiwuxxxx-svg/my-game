@@ -604,11 +604,53 @@
                         </strong>
                     </div>
 
+                    <div>
+                        🎖️ 冒險者臂章：
+                        <strong id="adventurerArmband">
+                            🥉
+                        </strong>
+                    </div>
+
+                </div>
+
+                <!-- ==================================================
+     🏅 升階任務
+================================================== -->
+
+                <div id="rankUpTaskBox" class="adventurer-status" style="display: none;">
+
+                    <div>
+                        🏅 升階任務
+                    </div>
+
+                    <div id="rankUpTaskName">
+                        -
+                    </div>
+
+                    <div id="rankUpTaskDescription">
+                        -
+                    </div>
+
+                    <div>
+                        進度：
+                        <strong id="rankUpTaskProgress">
+                            0 / 0
+                        </strong>
+                    </div>
+
+                    <button id="rankUpTaskButton" class="action-button" onclick="handleRankUpTask()">
+                        接取升階任務
+                    </button>
+
                 </div>
 
 
                 <button class="action-button" onclick="openGuildQuests()">
                     📜 查看任務
+                </button>
+
+                <button class="action-button" onclick="openAdventurerShop()">
+                    🛒 冒險者商會
                 </button>
 
             </div>
@@ -687,6 +729,37 @@
             </div>
 
         </div>
+
+        <!-- ==================================================
+     🛒 冒險者商會
+================================================== -->
+
+<div id="adventurerShopOverlay" class="inventory-overlay">
+
+    <div class="inventory-window guild-window">
+
+        <h2 class="inventory-title">
+            🛒 冒險者商會
+        </h2>
+
+        <p style="text-align:center;">
+            💰 持有 Gold：
+            <strong id="adventurerShopGold">
+                100
+            </strong>
+            G
+        </p>
+
+        <div id="adventurerShopList">
+        </div>
+
+        <button class="action-button" onclick="closeAdventurerShop()">
+            ← 返回
+        </button>
+
+    </div>
+
+</div>
 
         <!-- ==================================================
             道具店
@@ -1270,12 +1343,16 @@
 
         </div>
 
-        <!-- ==================================================
-            背包按鈕
-        ================================================== -->
+        <!-- <!-- ==================================================
+    背包與委託按鈕
+================================================== -->
 
         <button id="globalInventoryButton" class="global-inventory-button" onclick="openInventory()">
             🎒
+        </button>
+
+        <button id="globalGuildQuestButton" class="global-guild-quest-button" onclick="openAcceptedGuildQuests()">
+            📜
         </button>
 
 
@@ -1335,6 +1412,29 @@
 
 
                 <button class="item-info-close-button" onclick="closeItemInfo()">
+                    關閉
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- ==================================================
+     我的委託視窗
+================================================== -->
+
+        <div id="acceptedGuildQuestOverlay" class="inventory-overlay">
+
+            <div class="inventory-window">
+
+                <div class="inventory-title">
+                    📜 我的委託
+                </div>
+
+                <div id="acceptedGuildQuestList" class="guild-window">
+                </div>
+
+                <button class="inventory-close-button" onclick="closeAcceptedGuildQuests()">
                     關閉
                 </button>
 

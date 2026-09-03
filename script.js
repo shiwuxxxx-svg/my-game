@@ -188,7 +188,12 @@ const gameTime = {
 
 function advanceGameTime(minutes) {
 
+    const oldDay =
+        gameTime.day;
+
+
     gameTime.minute += minutes;
+
 
     while (gameTime.minute >= 60) {
 
@@ -197,12 +202,38 @@ function advanceGameTime(minutes) {
 
     }
 
+
     while (gameTime.hour >= 24) {
 
         gameTime.hour -= 24;
         gameTime.day += 1;
 
     }
+
+
+    /*
+       如果日期改變
+       就讓公會委託系統在下一次使用時
+       自動生成新一天的 10 個委託
+    */
+
+    if (
+        gameTime.day
+        !==
+        oldDay
+    ) {
+
+        guildDailyState.quests = [];
+
+        guildDailyState.rankUpTask = null;
+
+        guildDailyState.rankUpTaskAccepted =
+            false;
+
+        adventurerShopDailyPurchase = {};
+
+    }
+
 
     updateGameTimeUI();
 
@@ -342,15 +373,581 @@ const player = {
    冒險者資料
 ================================================== */
 
+/*
+   冒險者等級與角色 Lv. 完全獨立
+
+   rankIndex：
+   0 初心者
+   1 見習冒險者
+   2 初階冒險者
+   3 中階冒險者
+   4 資深冒險者
+   5 高階冒險者
+   6 大師冒險者
+   7 傳說中的冒險者
+*/
+
+const adventurerRanks = [
+    {
+        name: "初心者",
+        nextExp: 30,
+        armband: "🥉"
+    },
+    {
+        name: "見習冒險者",
+        nextExp: 60,
+        armband: "🟤"
+    },
+    {
+        name: "初階冒險者",
+        nextExp: 100,
+        armband: "⚪"
+    },
+    {
+        name: "中階冒險者",
+        nextExp: 180,
+        armband: "🔵"
+    },
+    {
+        name: "資深冒險者",
+        nextExp: 300,
+        armband: "🟣"
+    },
+    {
+        name: "高階冒險者",
+        nextExp: 500,
+        armband: "🟡"
+    },
+    {
+        name: "大師冒險者",
+        nextExp: 800,
+        armband: "🔴"
+    },
+    {
+        name: "傳說中的冒險者",
+        nextExp: null,
+        armband: "⭐"
+    }
+];
+
+
 const adventurer = {
-
-    rank: "初心者",
-
+    rankIndex: 0,
     exp: 0,
-
-    nextExp: 30
-
+    rankUpReady: false,
+    rankUpTaskAccepted: false,
+    rankUpTaskProgress: 0,
+    rankUpExploredRegions: []
 };
+
+/* ==================================================
+   🏅 冒險者升階任務
+================================================== */
+
+const rankUpTasks = [
+
+    {
+        rankIndex: 0,
+        name: "森林的第一步",
+        description: "探索迷霧森林的 3 個不同區域。",
+        type: "explore",
+        target: 3,
+        rewardGold: 50
+    },
+
+    {
+        rankIndex: 1,
+        name: "熟悉森林的威脅",
+        description: "在迷霧森林討伐 5 隻史萊姆。",
+        type: "hunt",
+        enemyType: "slime",
+        target: 5,
+        rewardGold: 80
+    },
+
+    {
+        rankIndex: 2,
+        name: "獨當一面",
+        description: "完成 5 次迷霧森林探索，並討伐 5 隻怪物。",
+        type: "mixed",
+        target: 5,
+        rewardGold: 120
+    }
+
+];
+
+/* ==================================================
+   🏅 接取／完成升階任務
+================================================== */
+
+function handleRankUpTask() {
+
+    const task =
+        getCurrentRankUpTask();
+
+    if (!task) {
+        return;
+    }
+
+
+    /* 尚未接取 */
+
+    if (!adventurer.rankUpTaskAccepted) {
+
+        adventurer.rankUpTaskAccepted =
+            true;
+
+        adventurer.rankUpTaskProgress =
+            0;
+
+        updateRankUpTaskUI();
+
+        showMessage(
+            "🏅 已接取升階任務！\n\n"
+            + task.name
+            + "\n\n"
+            + task.description
+        );
+
+        return;
+    }
+
+
+    /* 已接取，但尚未完成 */
+
+    if (
+        (adventurer.rankUpTaskProgress || 0)
+        < task.target
+    ) {
+
+        showMessage(
+            "目前還無法升階。\n\n"
+            + "升階任務進度："
+            + (adventurer.rankUpTaskProgress || 0)
+            + " / "
+            + task.target
+        );
+
+        return;
+    }
+
+
+    /* 完成升階 */
+
+    const oldRank =
+        getAdventurerRank();
+
+    const oldRankName =
+        oldRank.name;
+
+
+    adventurer.rankIndex++;
+
+    adventurer.exp = 0;
+
+    adventurer.rankUpReady =
+        false;
+
+    adventurer.rankUpTaskAccepted =
+        false;
+
+    adventurer.rankUpTaskProgress =
+        0;
+
+
+    player.gold +=
+        task.rewardGold;
+
+
+    updateAdventurerUI();
+    updateRankUpTaskUI();
+    updatePlayerUI();
+
+
+    const newRank =
+        getAdventurerRank();
+
+
+    showMessage(
+        "🎉 升階成功！\n\n"
+        + oldRankName
+        + " → "
+        + newRank.name
+        + "\n\n"
+        + "🎖️ 冒險者臂章："
+        + newRank.armband
+        + "\n"
+        + "💰 升階獎勵：+"
+        + task.rewardGold
+        + " G"
+    );
+
+}
+
+/* ==================================================
+   🏅 更新升階任務進度
+================================================== */
+
+function updateRankUpTaskProgress(amount = 1) {
+
+    if (!adventurer.rankUpTaskAccepted) {
+        return;
+    }
+
+    const task =
+        getCurrentRankUpTask();
+
+    if (!task) {
+        return;
+    }
+
+    if (adventurer.rankUpTaskProgress === undefined) {
+        adventurer.rankUpTaskProgress = 0;
+    }
+
+    adventurer.rankUpTaskProgress +=
+        amount;
+
+    adventurer.rankUpTaskProgress =
+        Math.min(
+            adventurer.rankUpTaskProgress,
+            task.target
+        );
+
+    updateRankUpTaskUI();
+
+}
+
+/* ==================================================
+   取得目前階級的升階任務
+================================================== */
+
+function getCurrentRankUpTask() {
+
+    return rankUpTasks.find(
+        function (task) {
+
+            return (
+                task.rankIndex ===
+                adventurer.rankIndex
+            );
+
+        }
+    );
+
+}
+
+
+/* ==================================================
+   更新升階任務畫面
+================================================== */
+
+function updateRankUpTaskUI() {
+
+    const box =
+        document.getElementById(
+            "rankUpTaskBox"
+        );
+
+    if (!box) {
+        return;
+    }
+
+
+    /*
+       還沒達到升階條件
+       → 不顯示升階任務
+    */
+
+    if (!adventurer.rankUpReady) {
+
+        box.style.display = "none";
+
+        return;
+
+    }
+
+
+    const task =
+        getCurrentRankUpTask();
+
+
+    if (!task) {
+
+        box.style.display = "none";
+
+        return;
+
+    }
+
+
+    box.style.display = "block";
+
+
+    document.getElementById(
+        "rankUpTaskName"
+    ).textContent =
+        "📜 " + task.name;
+
+
+    document.getElementById(
+        "rankUpTaskDescription"
+    ).textContent =
+        task.description;
+
+
+    const progressElement =
+        document.getElementById(
+            "rankUpTaskProgress"
+        );
+
+
+    if (
+        task.type === "explore"
+    ) {
+
+        progressElement.textContent =
+            (
+                adventurer.rankUpTaskProgress
+                || 0
+            )
+            + " / "
+            + task.target;
+
+    }
+    else {
+
+        progressElement.textContent =
+            (
+                adventurer.rankUpTaskProgress
+                || 0
+            )
+            + " / "
+            + task.target;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "rankUpTaskButton"
+        );
+
+
+    if (!adventurer.rankUpTaskAccepted) {
+
+        button.textContent =
+            "接取升階任務";
+
+        button.disabled =
+            false;
+
+    }
+    else {
+
+        button.textContent =
+            "進行升階";
+
+        button.disabled =
+            (
+                adventurer.rankUpTaskProgress
+                || 0
+            ) < task.target;
+
+    }
+
+}
+
+
+/* ==================================================
+   取得目前冒險者等級
+================================================== */
+
+function getAdventurerRank() {
+
+    return adventurerRanks[
+        adventurer.rankIndex
+    ];
+
+}
+
+
+/* ==================================================
+   取得目前冒險者等級名稱
+================================================== */
+
+function getAdventurerRankName() {
+
+    return getAdventurerRank().name;
+
+}
+
+
+/* ==================================================
+   取得冒險者下一階所需經驗
+================================================== */
+
+function getAdventurerNextExp() {
+
+    return getAdventurerRank().nextExp;
+
+}
+
+
+/* ==================================================
+   更新冒險者資料
+================================================== */
+
+function updateAdventurerUI() {
+
+    const rankElement =
+        document.getElementById(
+            "adventurerRank"
+        );
+
+    const expElement =
+        document.getElementById(
+            "adventurerExp"
+        );
+
+
+    const rank =
+        getAdventurerRank();
+
+
+    if (rankElement) {
+
+        rankElement.textContent =
+            rank.name;
+
+    }
+
+
+    if (expElement) {
+
+        if (rank.nextExp === null) {
+
+            expElement.textContent =
+                adventurer.exp
+                + "（MAX）";
+
+        }
+
+        else {
+
+            expElement.textContent =
+                adventurer.exp
+                + " / "
+                + rank.nextExp;
+
+        }
+
+    }
+
+}
+
+
+/* ==================================================
+   增加冒險者經驗
+================================================== */
+
+function addAdventurerExp(amount) {
+
+    if (amount <= 0) {
+
+        return;
+
+    }
+
+
+    /*
+       已經是最高階
+    */
+
+    if (
+        adventurer.rankIndex
+        >=
+        adventurerRanks.length - 1
+    ) {
+
+        return;
+
+    }
+
+
+    adventurer.exp += amount;
+
+
+    checkAdventurerLevel();
+
+    updateAdventurerUI();
+
+}
+
+
+/* ==================================================
+   檢查冒險者是否達到升階條件
+================================================== */
+
+function checkAdventurerLevel() {
+
+    const nextExp =
+        getAdventurerNextExp();
+
+
+    /*
+       最高階
+    */
+
+    if (nextExp === null) {
+
+        return;
+
+    }
+
+
+    /*
+       經驗尚未滿
+    */
+
+    if (
+        adventurer.exp
+        <
+        nextExp
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       經驗達標後：
+
+       不直接升階！
+
+       必須先完成升階任務。
+    */
+
+    adventurer.exp =
+        nextExp;
+
+
+    adventurer.rankUpReady =
+        true;
+
+
+    updateAdventurerUI();
+
+
+    showMessage(
+        "📜 冒險者經驗已達到升階條件！\n\n"
+        + "請回到冒險者公會進行升階任務。"
+    );
+
+}
+
+
 
 /* ==================================================
    玩家背包
@@ -419,7 +1016,7 @@ function closeInventory() {
 
 
 /* ==================================================
-   背包按鈕顯示控制
+   🎒📜 全域按鈕顯示控制
 ================================================== */
 
 function updateInventoryButton() {
@@ -429,35 +1026,56 @@ function updateInventoryButton() {
             "globalInventoryButton"
         );
 
-
-    if (!inventoryButton) return;
+    const guildQuestButton =
+        document.getElementById(
+            "globalGuildQuestButton"
+        );
 
 
     const currentScreen =
         document.querySelector(".screen.active");
 
 
+    /* 沒有目前畫面 */
+
     if (!currentScreen) {
 
-        inventoryButton.style.display = "none";
+        if (inventoryButton) {
+            inventoryButton.style.display = "none";
+        }
+
+        if (guildQuestButton) {
+            guildQuestButton.style.display = "none";
+        }
 
         return;
 
     }
 
 
-    /* 創角畫面、戰鬥畫面不顯示背包 */
+    /* 創角畫面、戰鬥畫面不顯示 */
 
-    if (
+    const hideGlobalButtons =
         currentScreen.id === "characterCreateScreen" ||
-        currentScreen.id === "forestScreen"
-    ) {
+        currentScreen.id === "forestScreen";
 
-        inventoryButton.style.display = "none";
 
-    } else {
+    if (inventoryButton) {
 
-        inventoryButton.style.display = "block";
+        inventoryButton.style.display =
+            hideGlobalButtons
+                ? "none"
+                : "block";
+
+    }
+
+
+    if (guildQuestButton) {
+
+        guildQuestButton.style.display =
+            hideGlobalButtons
+                ? "none"
+                : "block";
 
     }
 
@@ -527,6 +1145,18 @@ function updateInventoryUI() {
             type: "bluePotion",
             name: "小藍藥水",
             icon: "🔵"
+        },
+
+        {
+            type: "bandage",
+            name: "初級繃帶",
+            icon: "🩹"
+        },
+
+        {
+            type: "travelFood",
+            name: "旅行糧食",
+            icon: "🍞"
         }
 
     ];
@@ -1385,288 +2015,1425 @@ function closeSellShop() {
 }
 
 /* ==================================================
-   公會初級委託
+   冒險者公會：每日委託
 ================================================== */
 
-const guildQuests = [
+/*
+   委託類型：
+
+   collect  收集
+   hunt     討伐
+   explore  探索
+   rescue   救助
+   escort   護送
+
+*/
+
+/* ==================================================
+   冒險者商會
+================================================== */
+
+function openAdventurerShop() {
+
+    const container =
+        document.getElementById(
+            "adventurerShopList"
+        );
+
+    const goldElement =
+        document.getElementById(
+            "adventurerShopGold"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+
+    if (goldElement) {
+
+        goldElement.textContent =
+            player.gold;
+
+    }
+
+
+    adventurerShopItems.forEach(
+        function (item) {
+
+            const element =
+                document.createElement("div");
+
+            element.className =
+                "guild-quest";
+
+
+            element.innerHTML =
+
+                "<h3>"
+                + item.icon
+                + " "
+                + item.name
+                + "</h3>"
+
+                +
+
+                "<p>"
+                + item.description
+                + "</p>"
+
+                +
+
+                "<p>"
+                + "💰 "
+                + item.price
+                + " G"
+                + "</p>";
+
+
+            element.onclick =
+                function () {
+
+                    buyAdventurerShopItem(
+                        item
+                    );
+
+                };
+
+
+            container.appendChild(
+                element
+            );
+
+        }
+    );
+
+
+    document
+        .getElementById(
+            "adventurerShopOverlay"
+        )
+        .classList.add("show");
+
+}
+
+function closeAdventurerShop() {
+
+    document
+        .getElementById(
+            "adventurerShopOverlay"
+        )
+        .classList.remove("show");
+
+}
+
+function buyAdventurerShopItem(item) {
+
+    /*
+       每日限購
+    */
+
+    const purchased =
+        adventurerShopDailyPurchase[item.type] || 0;
+
+    if (purchased >= item.dailyLimit) {
+
+        showMessage(
+            "🛒 今天已經達到 "
+            + item.name
+            + " 的購買上限了。\n\n"
+            + "明天再來看看吧！"
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Gold 不足
+    */
+
+    if (
+        player.gold <
+        item.price
+    ) {
+
+        showMessage(
+            "💰 Gold 不足，無法購買。"
+        );
+
+        return;
+
+    }
+
+
+    /*
+       扣除 Gold
+    */
+
+    player.gold -=
+        item.price;
+
+
+    /*
+       加入背包
+    */
+
+    if (
+        inventory[item.type] === undefined
+    ) {
+
+        inventory[item.type] = 0;
+
+    }
+
+    inventory[item.type] += 1;
+
+
+    /*
+       記錄今天已購買
+    */
+
+    adventurerShopDailyPurchase[item.type] =
+        (adventurerShopDailyPurchase[item.type] || 0) + 1;
+
+
+    updatePlayerUI();
+    updateInventoryUI();
+
+
+    const goldElement =
+        document.getElementById(
+            "adventurerShopGold"
+        );
+
+    if (goldElement) {
+
+        goldElement.textContent =
+            player.gold;
+
+    }
+
+
+    showMessage(
+        "🛒 購買成功！\n\n"
+        + item.icon
+        + " "
+        + item.name
+        + " ×1\n"
+        + "💰 -"
+        + item.price
+        + " G"
+    );
+
+}
+
+/* ==================================================
+   🛒 冒險者商會每日購買紀錄
+================================================== */
+
+let adventurerShopDailyPurchase = {};
+
+/* ==================================================
+   委託名稱
+================================================== */
+
+const guildQuestTemplates = [
+
+    /* =========================
+       收集
+    ========================= */
 
     {
-        id: "herbQuest",
+        type: "collect",
         rank: "初級",
         name: "收集藥草",
         icon: "🌿",
         itemType: "herb",
-        amount: 3,
-        gold: 25,
+        amountMin: 2,
+        amountMax: 5,
+        goldMin: 15,
+        goldMax: 35,
         exp: 10
     },
 
     {
-        id: "woodQuest",
+        type: "collect",
         rank: "初級",
         name: "收集木材",
         icon: "🪵",
         itemType: "wood",
-        amount: 3,
-        gold: 22,
+        amountMin: 2,
+        amountMax: 5,
+        goldMin: 15,
+        goldMax: 35,
         exp: 10
     },
 
     {
-        id: "oreQuest",
+        type: "collect",
         rank: "初級",
         name: "收集礦石",
         icon: "🪨",
         itemType: "ore",
-        amount: 2,
-        gold: 20,
+        amountMin: 2,
+        amountMax: 4,
+        goldMin: 18,
+        goldMax: 40,
+        exp: 12
+    },
+
+    {
+        type: "collect",
+        rank: "初級",
+        name: "收集魚",
+        icon: "🐟",
+        itemType: "fish",
+        amountMin: 2,
+        amountMax: 4,
+        goldMin: 15,
+        goldMax: 35,
         exp: 10
+    },
+
+    {
+        type: "collect",
+        rank: "初級",
+        name: "收集蘑菇",
+        icon: "🍄",
+        itemType: "mushroom",
+        amountMin: 2,
+        amountMax: 4,
+        goldMin: 18,
+        goldMax: 38,
+        exp: 12
+    },
+
+
+    /* =========================
+       討伐
+    ========================= */
+
+    {
+        type: "hunt",
+        rank: "初級",
+        name: "討伐史萊姆",
+        icon: "🟢",
+        enemyType: "slime",
+        amountMin: 2,
+        amountMax: 5,
+        goldMin: 20,
+        goldMax: 40,
+        exp: 12
+    },
+
+    {
+        type: "hunt",
+        rank: "初級",
+        name: "討伐蝙蝠",
+        icon: "🦇",
+        enemyType: "bat",
+        amountMin: 2,
+        amountMax: 4,
+        goldMin: 22,
+        goldMax: 45,
+        exp: 14
+    },
+
+    {
+        type: "hunt",
+        rank: "初級",
+        name: "討伐野狼",
+        icon: "🐺",
+        enemyType: "wolf",
+        amountMin: 1,
+        amountMax: 3,
+        goldMin: 25,
+        goldMax: 50,
+        exp: 16
+    },
+
+    {
+        type: "hunt",
+        rank: "初級",
+        name: "討伐青蛙",
+        icon: "🐸",
+        enemyType: "frog",
+        amountMin: 2,
+        amountMax: 4,
+        goldMin: 20,
+        goldMax: 40,
+        exp: 12
+    },
+
+    {
+        type: "hunt",
+        rank: "初級",
+        name: "討伐熊",
+        icon: "🐻",
+        enemyType: "bear",
+        amountMin: 1,
+        amountMax: 2,
+        goldMin: 35,
+        goldMax: 65,
+        exp: 20
+    },
+
+
+    /* =========================
+       探索
+    ========================= */
+
+    {
+        type: "explore",
+        rank: "初級",
+        name: "探索入口草原",
+        icon: "🗺️",
+        regionKey: "entrance",
+        amount: 1,
+        goldMin: 15,
+        goldMax: 25,
+        expMin: 5,
+        expMax: 8
+    },
+
+    {
+        type: "explore",
+        rank: "初級",
+        name: "探索中央森林",
+        icon: "🗺️",
+        regionKey: "centralForest",
+        amount: 1,
+        goldMin: 20,
+        goldMax: 30,
+        expMin: 6,
+        expMax: 10
+    },
+
+    {
+        type: "explore",
+        rank: "初級",
+        name: "探索左側河岸",
+        icon: "🗺️",
+        regionKey: "riverBank",
+        amount: 1,
+        goldMin: 20,
+        goldMax: 30,
+        expMin: 6,
+        expMax: 10
+    },
+
+    {
+        type: "explore",
+        rank: "初級",
+        name: "探索右側岩壁",
+        icon: "🗺️",
+        regionKey: "rockWall",
+        amount: 1,
+        goldMin: 20,
+        goldMax: 30,
+        expMin: 6,
+        expMax: 10
+    },
+
+    {
+        type: "explore",
+        rank: "初級",
+        name: "探索深處深林",
+        icon: "🗺️",
+        regionKey: "deepForest",
+        amount: 1,
+        goldMin: 30,
+        goldMax: 45,
+        expMin: 10,
+        expMax: 15
+    },
+
+    /* =========================
+       救助
+    ========================= */
+
+    {
+        type: "rescue",
+        rank: "初級",
+        name: "尋找迷路的冒險者",
+        icon: "🧭",
+        amountMin: 1,
+        amountMax: 1,
+        goldMin: 30,
+        goldMax: 50,
+        exp: 15
+    },
+
+
+    /* =========================
+       護送
+    ========================= */
+
+    {
+        type: "escort",
+        rank: "初級",
+        name: "護送商人前往指定地點",
+        icon: "🛒",
+        destinationRegions: [
+            "centralForest",
+            "riverBank",
+            "rockWall"
+        ],
+        amountMin: 1,
+        amountMax: 1,
+        goldMin: 30,
+        goldMax: 55,
+        exp: 15
     }
 
 ];
 
 /* ==================================================
-   開啟公會任務
+   🛒 冒險者商會商品
 ================================================== */
 
-function openGuildQuests() {
-
-    const container =
-        document.getElementById(
-            "guildQuestList"
-        );
-
-    if (!container) {
-        return;
+const adventurerShopItems = [
+    {
+        type: "bandage",
+        name: "初級繃帶",
+        icon: "🩹",
+        price: 30,
+        dailyLimit: 1,
+        description: "戰鬥中每回合恢復少許 HP"
+    },
+    {
+        type: "travelFood",
+        name: "旅行糧食",
+        icon: "🍞",
+        price: 20,
+        dailyLimit: 1,
+        description: "增加飽食度，並恢復少許 HP"
     }
-
-    container.innerHTML = "";
-
-    guildQuests.forEach(function (quest) {
-
-        const questElement =
-            document.createElement("div");
-
-        questElement.className =
-            "guild-quest";
-
-        questElement.innerHTML =
-
-            "<h3>"
-            + quest.name
-            + "</h3>"
-
-            +
-
-            "<p>"
-            + "🟢 "
-            + quest.rank
-            + "委託"
-            + "</p>";
-
-        questElement.onclick =
-            function () {
-
-                openGuildQuestInfo(
-                    quest
-                );
-
-            };
-
-        container.appendChild(
-            questElement
-        );
-
-    });
-
-    document
-        .getElementById("guildQuestOverlay")
-        .classList.add("show");
-}
+];
 
 /* ==================================================
-   開啟委託詳細資訊
+   每日公會資料
+================================================== */
+
+const guildDailyState = {
+
+    day: 0,
+
+    quests: []
+
+};
+
+
+/* ==================================================
+   隨機整數
+================================================== */
+
+function randomInt(min, max) {
+
+    return Math.floor(
+        Math.random() * (max - min + 1)
+    ) + min;
+
+}
+
+
+/* ==================================================
+   建立一個新的委託
+================================================== */
+
+function createGuildQuest(template, id) {
+
+    const amount =
+        template.amount !== undefined
+            ? template.amount
+            : randomInt(
+                template.amountMin,
+                template.amountMax
+            );
+
+
+    const gold =
+        randomInt(
+            template.goldMin,
+            template.goldMax
+        );
+
+    const exp =
+        template.exp !== undefined
+            ? template.exp
+            : randomInt(
+                template.expMin,
+                template.expMax
+            );
+
+
+    return {
+        id,
+        type: template.type,
+        rank: template.rank,
+        name: template.name,
+        icon: template.icon,
+
+        itemType: template.itemType || null,
+        enemyType: template.enemyType || null,
+        regionKey: template.regionKey || null,
+
+        /* 救助／護送 */
+        destinationRegionKey: null,
+        destinationX: null,
+        destinationY: null,
+
+        amount,
+        gold,
+        exp,
+
+        progress: 0,
+
+        accepted: false,
+        completed: false,
+        failed: false,
+
+        /* 護送任務是否已開始 */
+        escortStarted: false,
+
+        rescueRegionKey: null,
+        rescueX: null,
+        rescueY: null,
+        rescueStarted: false,
+
+        /* 救助／護送是否已經完成森林階段 */
+        forestEventCompleted: false,
+
+        /* 回到小小鎮後是否已觸發完成對話 */
+        townCompletionReady: false
+    };
+
+}
+
+
+/* ==================================================
+   產生每日 10 個委託
+================================================== */
+
+function generateDailyGuildQuests() {
+
+    guildDailyState.quests = [];
+
+
+    const availableTemplates = [
+        ...guildQuestTemplates
+    ];
+
+
+    /*
+       洗牌
+    */
+
+    for (
+        let i = availableTemplates.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+
+        [
+            availableTemplates[i],
+            availableTemplates[j]
+        ] =
+            [
+                availableTemplates[j],
+                availableTemplates[i]
+            ];
+
+    }
+
+
+    /*
+       每天固定產生 10 個
+    */
+
+    for (
+        let i = 0;
+        i < 10;
+        i++
+    ) {
+
+        const template =
+            availableTemplates[
+            i % availableTemplates.length
+            ];
+
+
+        guildDailyState.quests.push(
+            createGuildQuest(
+                template,
+                "guildQuest_"
+                + gameTime.day
+                + "_"
+                + i
+            )
+        );
+
+    }
+
+
+    guildDailyState.day =
+        gameTime.day;
+
+}
+
+
+/* ==================================================
+   確認每日委託是否需要刷新
+================================================== */
+
+function ensureDailyGuildQuests() {
+
+    if (
+        guildDailyState.day
+        !==
+        gameTime.day
+    ) {
+
+        generateDailyGuildQuests();
+
+    }
+
+
+    if (
+        guildDailyState.quests.length
+        === 0
+    ) {
+
+        generateDailyGuildQuests();
+
+    }
+
+}
+
+
+/* ==================================================
+   開啟委託詳細資料
 ================================================== */
 
 let selectedGuildQuest = null;
 
+let guildQuestInfoFromAccepted = false;
 
 function openGuildQuestInfo(quest) {
 
-    selectedGuildQuest = quest;
+    selectedGuildQuest =
+        quest;
 
-    const currentAmount =
-        inventory[quest.itemType] || 0;
 
-    document
-        .getElementById("guildQuestInfoIcon")
-        .textContent =
-        quest.icon;
-
-    document
-        .getElementById("guildQuestInfoName")
-        .textContent =
-        quest.name;
-
-    document
-        .getElementById("guildQuestInfoRequirement")
-        .textContent =
-        "需求："
-        + quest.amount
-        + " 個";
-
-    document
-        .getElementById("guildQuestInfoOwned")
-        .textContent =
-        "目前持有："
-        + currentAmount
-        + " 個";
-
-    document
-        .getElementById("guildQuestInfoReward")
-        .textContent =
-        "💰 報酬："
-        + quest.gold
-        + " G";
-
-    document
-        .getElementById("guildQuestInfoExp")
-        .textContent =
-        "📈 冒險者經驗：+"
-        + quest.exp;
-
-    const button =
+    const icon =
         document.getElementById(
-            "guildQuestCompleteButton"
+            "guildQuestInfoIcon"
         );
 
-    if (currentAmount >= quest.amount) {
+    const name =
+        document.getElementById(
+            "guildQuestInfoName"
+        );
 
-        button.disabled = false;
+    const requirement =
+        document.getElementById(
+            "guildQuestInfoRequirement"
+        );
 
-        button.textContent =
-            "📦 完成委託";
+    const owned =
+        document.getElementById(
+            "guildQuestInfoOwned"
+        );
 
-    } else {
+    const reward =
+        document.getElementById(
+            "guildQuestInfoReward"
+        );
 
-        button.disabled = true;
+    const exp =
+        document.getElementById(
+            "guildQuestInfoExp"
+        );
 
-        button.textContent =
-            "材料不足";
+
+    if (icon) {
+
+        icon.textContent =
+            quest.icon;
 
     }
 
-    document
-        .getElementById(
-            "guildQuestInfoOverlay"
-        )
-        .classList.add("show");
+
+    if (name) {
+
+        name.textContent =
+            quest.name;
+
+    }
+
+
+    if (requirement) {
+
+        if (
+            quest.type === "collect"
+        ) {
+
+            const itemNames = {
+                herb: "藥草",
+                wood: "木材",
+                ore: "礦石",
+                fish: "魚",
+                mushroom: "蘑菇"
+            };
+
+
+            requirement.textContent =
+                "需求："
+                + itemNames[
+                quest.itemType
+                ]
+                + " ×"
+                + quest.amount;
+
+        }
+
+        else if (
+            quest.type === "hunt"
+        ) {
+
+            const enemyNames = {
+                slime: "史萊姆",
+                bat: "蝙蝠",
+                wolf: "野狼",
+                frog: "青蛙",
+                bear: "熊"
+            };
+
+
+            requirement.textContent =
+                "需求：討伐 "
+                + enemyNames[
+                quest.enemyType
+                ]
+                + " ×"
+                + quest.amount;
+
+        }
+
+        else if (
+            quest.type === "explore"
+        ) {
+
+            requirement.textContent =
+                "需求：探索「"
+                + forestRegions[quest.regionKey].name
+                + "」";
+
+        }
+
+        else if (
+            quest.type === "rescue"
+        ) {
+
+            requirement.textContent =
+                "需求：完成救助事件";
+
+        }
+
+        else if (
+            quest.type === "escort"
+        ) {
+
+            requirement.textContent =
+                "需求：完成護送事件";
+
+        }
+
+    }
+
+
+    if (owned) {
+
+        if (
+            quest.type === "collect"
+        ) {
+
+            const ownedAmount =
+                inventory[
+                quest.itemType
+                ] || 0;
+
+
+            owned.textContent =
+                "目前持有：×"
+                + ownedAmount;
+
+        }
+
+        else {
+
+            owned.textContent =
+                "目前進度："
+                + quest.progress
+                + " / "
+                + quest.amount;
+
+        }
+
+    }
+
+
+    if (reward) {
+
+        reward.textContent =
+            "💰 報酬："
+            + quest.gold
+            + " G";
+
+    }
+
+
+    if (exp) {
+
+        exp.textContent =
+            "📈 冒險者經驗：+"
+            + quest.exp;
+
+    }
+
+
+    const completeButton =
+        document.querySelector(
+            "#guildQuestInfoOverlay button"
+        );
+
+
+    if (completeButton) {
+
+        /*
+           從「我的委託」進來
+           不顯示完成委託按鈕
+        */
+
+        if (guildQuestInfoFromAccepted) {
+
+            completeButton.style.display =
+                "none";
+
+        }
+
+        else {
+
+            completeButton.style.display =
+                "block";
+
+
+            /*
+               已完成
+            */
+
+            if (quest.completed) {
+
+                completeButton.textContent =
+                    "已完成";
+
+                completeButton.disabled =
+                    true;
+
+            }
+
+            /*
+               尚未接取
+            */
+
+            else if (!quest.accepted) {
+
+                completeButton.textContent =
+                    "接取委託";
+
+                completeButton.disabled =
+                    false;
+
+            }
+
+            /*
+               已接取
+            */
+
+            else {
+
+                completeButton.textContent =
+                    "完成委託";
+
+                completeButton.disabled =
+                    !canCompleteGuildQuest(
+                        quest
+                    );
+
+            }
+
+        }
+
+    }
+
+
+    document.getElementById(
+        "guildQuestInfoOverlay"
+    ).classList.add(
+        "show"
+    );
+
 }
 
+
 /* ==================================================
-   完成目前選擇的委託
+   判斷委託是否可以完成
+================================================== */
+
+function canCompleteGuildQuest(quest) {
+
+    if (
+        quest.completed
+        ||
+        quest.failed
+        ||
+        !quest.accepted
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+       收集
+    */
+
+    if (
+        quest.type === "collect"
+    ) {
+
+        return (
+            (
+                inventory[
+                quest.itemType
+                ] || 0
+            )
+            >=
+            quest.amount
+        );
+
+    }
+
+
+    /*
+       討伐
+    */
+
+    if (
+        quest.type === "hunt"
+    ) {
+
+        return (
+            quest.progress
+            >=
+            quest.amount
+        );
+
+    }
+
+
+    /*
+       探索
+    */
+
+    if (
+        quest.type === "explore"
+    ) {
+
+        return (
+            quest.progress
+            >=
+            quest.amount
+        );
+
+    }
+
+
+    /*
+       救助／護送
+    */
+
+    if (
+        quest.type === "rescue"
+        ||
+        quest.type === "escort"
+    ) {
+
+        return (
+            quest.progress
+            >=
+            quest.amount
+        );
+
+    }
+
+
+    return false;
+
+}
+
+
+/* ==================================================
+   接取／完成委託
 ================================================== */
 
 function completeSelectedGuildQuest() {
 
     if (!selectedGuildQuest) {
+
         return;
+
     }
 
 
-    completeGuildQuest(
-        selectedGuildQuest
-    );
+    const quest =
+        selectedGuildQuest;
 
-}
 
-/* ==================================================
-   關閉委託詳細資訊
+    /*
+       第一次按：
+
+       接取委託
+    */
+
+    if (!quest.accepted) {
+
+        quest.accepted =
+            true;
+
+        /* ==================================================
+   護送委託：接取時決定目的地
 ================================================== */
 
-function closeGuildQuestInfo() {
+        if (quest.type === "escort") {
 
-    document
-        .getElementById(
-            "guildQuestInfoOverlay"
+            const template =
+                guildQuestTemplates.find(
+                    t =>
+                        t.type === "escort"
+                        &&
+                        t.name === quest.name
+                );
+
+            if (
+                template
+                &&
+                template.destinationRegions
+                &&
+                template.destinationRegions.length > 0
+            ) {
+
+                const regions =
+                    template.destinationRegions;
+
+                quest.destinationRegionKey =
+                    regions[
+                    Math.floor(
+                        Math.random()
+                        * regions.length
+                    )
+                    ];
+
+                const point =
+                    getRandomPointInRegion(
+                        quest.destinationRegionKey
+                    );
+
+                if (point) {
+
+                    quest.destinationX =
+                        point.x;
+
+                    quest.destinationY =
+                        point.y;
+
+                }
+
+            }
+
+        }
+
+        else if (quest.type === "rescue") {
+
+            setupRescueQuest(quest);
+
+        }
+
+        if (quest.type === "collect") {
+
+            quest.progress =
+                Math.min(
+                    inventory[
+                    quest.itemType
+                    ] || 0,
+                    quest.amount
+                );
+
+        }
+
+
+        /*
+           收集任務可以在接取以前
+           就已經持有材料。
+
+           所以接取後立即檢查。
+        */
+
+        openGuildQuestInfo(
+            quest
+        );
+
+
+        let acceptMessage =
+            "📜 已接取委託：\n"
+            + quest.name;
+
+        if (
+            quest.type === "escort"
+            &&
+            quest.destinationRegionKey
+            &&
+            forestRegions[quest.destinationRegionKey]
+        ) {
+            acceptMessage +=
+                "\n\n📍 目的地："
+                + forestRegions[
+                    quest.destinationRegionKey
+                ].name;
+        }
+
+        showMessage(
+            acceptMessage
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+       第二次按：
+
+       完成委託
+    */
+
+    if (
+        !canCompleteGuildQuest(
+            quest
         )
-        .classList.remove("show");
+    ) {
 
-    selectedGuildQuest = null;
+        showMessage(
+            "目前還無法完成這項委託。"
+        );
 
-}
-
-/* ==================================================
-   完成公會委託
-================================================== */
-
-function completeGuildQuest(quest) {
-
-    const currentAmount =
-        inventory[quest.itemType] || 0;
-
-    if (currentAmount < quest.amount) {
         return;
+
     }
 
 
-    /* 扣除材料 */
+    /*
+       收集委託：
+       扣除材料
+    */
 
-    inventory[quest.itemType] -=
-        quest.amount;
+    if (
+        quest.type === "collect"
+    ) {
+
+        inventory[
+            quest.itemType
+        ] -= quest.amount;
 
 
-    /* 給予 Gold */
+        updateInventoryUI();
+
+    }
+
+
+    /*
+       發放獎勵
+    */
 
     player.gold +=
         quest.gold;
 
 
-    /* 增加冒險者經驗 */
+    addAdventurerExp(
+        quest.exp
+    );
 
-    adventurer.exp +=
-        quest.exp;
 
+    quest.completed =
+        true;
 
-    /* 更新玩家 UI */
 
     updatePlayerUI();
 
-    updateInventoryUI();
 
-    updateAdventurerUI();
-
-
-    /* 檢查是否升級 */
-
-    checkAdventurerLevel();
-
-
-    /* 重新整理任務畫面 */
-
-    openGuildQuests();
+    openGuildQuestInfo(
+        quest
+    );
 
 
     showMessage(
-
-        "📜 委託完成！\n\n"
-
+        "🎉 委託完成！\n\n"
         + quest.name
-
-        + "\n\n"
-
-        + "💰 獲得 "
+        + "\n"
+        + "💰 +"
         + quest.gold
         + " G\n"
-
         + "📈 冒險者經驗 +"
         + quest.exp
-
-        + "！"
-
     );
 
+
+    openGuildQuests();
+
 }
+
+function checkTownGuildQuestCompletion() {
+
+    ensureDailyGuildQuests();
+
+
+    /*
+       ==========================================
+       找出已完成森林事件、等待回小小鎮回報的委託
+       ==========================================
+    */
+
+    const forestQuest =
+        guildDailyState.quests.find(
+            quest =>
+                (
+                    quest.type === "escort"
+                    ||
+                    quest.type === "rescue"
+                )
+                &&
+                quest.accepted
+                &&
+                !quest.completed
+                &&
+                !quest.failed
+                &&
+                quest.townCompletionReady
+        );
+
+
+    if (!forestQuest) {
+        return;
+    }
+
+
+    /*
+       ==========================================
+       護送委託
+       ==========================================
+    */
+
+    if (forestQuest.type === "escort") {
+
+        showMessage(
+            "🛒 商人：\n"
+            + "謝謝你幫忙護送我！\n\n"
+            + "這次的護送順利完成了。\n"
+            + "可以回公會回報委託了。"
+        );
+
+    }
+
+
+    /*
+       ==========================================
+       救助委託
+       ==========================================
+    */
+
+    else if (forestQuest.type === "rescue") {
+
+        showMessage(
+            "🧭 冒險者：\n"
+            + "謝謝你把我救出來！\n\n"
+            + "我終於可以回去了。\n"
+            + "你可以回公會回報委託了。"
+        );
+
+    }
+
+
+    /*
+       ==========================================
+       避免每次進入小小鎮都重複觸發
+       ==========================================
+    */
+
+    forestQuest.townCompletionReady =
+        false;
+
+}
+
+/* ==================================================
+   關閉委託詳細資料
+================================================== */
+
+function closeGuildQuestInfo() {
+
+    document.getElementById(
+        "guildQuestInfoOverlay"
+    ).classList.remove(
+        "show"
+    );
+
+
+    selectedGuildQuest =
+        null;
+
+
+    /*
+       如果公會委託列表目前是開啟的，
+       關閉詳情後立即刷新列表
+    */
+
+    const guildOverlay =
+        document.getElementById(
+            "guildQuestOverlay"
+        );
+
+
+    if (
+        guildOverlay
+        &&
+        guildOverlay.classList.contains("show")
+    ) {
+
+        openGuildQuests();
+
+    }
+
+}
+
 
 /* ==================================================
    關閉公會委託
@@ -1674,85 +3441,324 @@ function completeGuildQuest(quest) {
 
 function closeGuildQuests() {
 
+    document.getElementById(
+        "guildQuestOverlay"
+    ).classList.remove(
+        "show"
+    );
+
+}
+
+/* ==================================================
+   開啟公會委託
+================================================== */
+
+function openGuildQuests() {
+
+    ensureDailyGuildQuests();
+
+
+    const container =
+        document.getElementById(
+            "guildQuestList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    guildDailyState.quests.forEach(
+        function (quest) {
+
+            const questElement =
+                document.createElement("div");
+
+
+            questElement.className =
+                "guild-quest";
+
+
+            let statusText =
+                "📜 可接取";
+
+
+            if (quest.completed) {
+
+                statusText =
+                    "✅ 已完成";
+
+            }
+
+            else if (quest.failed) {
+
+                statusText =
+                    "❌ 已失敗";
+
+            }
+
+            else if (quest.accepted) {
+
+                statusText =
+                    "📌 已接取";
+
+            }
+
+
+            let progressText = "";
+
+            if (quest.type === "collect") {
+                const owned = inventory[quest.itemType] || 0;
+                const current = Math.min(owned, quest.amount);
+
+                progressText =
+                    "<p>進度：" +
+                    current +
+                    " / " +
+                    quest.amount +
+                    "</p>";
+
+            } else if (
+                quest.type === "hunt"
+                || quest.type === "explore"
+            ) {
+                progressText =
+                    "<p>進度：" +
+                    quest.progress +
+                    " / " +
+                    quest.amount +
+                    "</p>";
+            }
+
+
+            questElement.innerHTML =
+
+                "<h3>"
+                + quest.icon
+                + " "
+                + quest.name
+                + "</h3>"
+
+                +
+
+                "<p>"
+                + "🟢 "
+                + quest.rank
+                + "委託"
+                + "</p>"
+
+                +
+
+                progressText
+
+                +
+
+                "<p>"
+                + statusText
+                + "</p>"
+
+                +
+
+                "<p>"
+                + "💰 "
+                + quest.gold
+                + " G　"
+                + "📈 +"
+                + quest.exp
+                + " 冒險者經驗"
+                + "</p>";
+
+
+            questElement.onclick = function () {
+                guildQuestInfoFromAccepted = false;
+                openGuildQuestInfo(quest);
+            };
+
+
+            container.appendChild(
+                questElement
+            );
+
+        }
+    );
+
+
     document
         .getElementById(
             "guildQuestOverlay"
         )
-        .classList.remove("show");
+        .classList.add(
+            "show"
+        );
 
 }
 
 /* ==================================================
-   更新冒險者 UI
+   📜 開啟我的委託
 ================================================== */
 
-function updateAdventurerUI() {
+function openAcceptedGuildQuests() {
 
-    const rankElement =
+    ensureDailyGuildQuests();
+
+
+    const container =
         document.getElementById(
-            "adventurerRank"
+            "acceptedGuildQuestList"
         );
 
-    const expElement =
-        document.getElementById(
-            "adventurerExp"
-        );
 
-
-    if (rankElement) {
-
-        rankElement.textContent =
-            adventurer.rank;
-
+    if (!container) {
+        return;
     }
 
 
-    if (expElement) {
+    container.innerHTML = "";
 
-        expElement.textContent =
 
-            adventurer.exp
-            + " / "
-            + adventurer.nextExp;
+    const acceptedQuests =
+        guildDailyState.quests.filter(
+            function (quest) {
 
-    }
+                return (
+                    quest.accepted
+                    &&
+                    !quest.completed
+                    &&
+                    !quest.failed
+                );
 
-}
+            }
+        );
 
-/* ==================================================
-   冒險者等級判定
-================================================== */
-
-function checkAdventurerLevel() {
 
     if (
-        adventurer.rank === "初心者" &&
-        adventurer.exp >= adventurer.nextExp
+        acceptedQuests.length === 0
     ) {
 
-        adventurer.rank =
-            "見習冒險者";
-
-        adventurer.exp -=
-            adventurer.nextExp;
-
-        adventurer.nextExp =
-            60;
-
-
-        showMessage(
-
-            "🎉 冒險者等級提升！\n\n"
-
-            + "🌱 初心者\n"
-            + "↓\n"
-            + "🟢 見習冒險者"
-
-        );
+        container.innerHTML =
+            "<p style=\"text-align:center;\">"
+            + "目前沒有已接取的委託。"
+            + "</p>";
 
     }
 
+
+    acceptedQuests.forEach(
+        function (quest) {
+
+            const questElement =
+                document.createElement("div");
+
+
+            questElement.className =
+                "guild-quest";
+
+
+            let current =
+                quest.progress;
+
+
+            if (
+                quest.type === "collect"
+            ) {
+
+                const owned =
+                    inventory[
+                    quest.itemType
+                    ] || 0;
+
+
+                current =
+                    Math.min(
+                        owned,
+                        quest.amount
+                    );
+
+            }
+
+
+            questElement.innerHTML =
+
+                "<h3>"
+                + quest.icon
+                + " "
+                + quest.name
+                + "</h3>"
+
+                +
+
+                "<p>"
+                + "📌 已接取"
+                + "</p>"
+
+                +
+
+                "<p>"
+                + "進度："
+                + current
+                + " / "
+                + quest.amount
+                + "</p>"
+
+                +
+
+                "<p>"
+                + "💰 "
+                + quest.gold
+                + " G　"
+                + "📈 +"
+                + quest.exp
+                + " 冒險者經驗"
+                + "</p>";
+
+
+            questElement.onclick = function () {
+                guildQuestInfoFromAccepted = true;
+                openGuildQuestInfo(quest);
+            };
+
+
+            container.appendChild(
+                questElement
+            );
+
+        }
+    );
+
+
+    document
+        .getElementById(
+            "acceptedGuildQuestOverlay"
+        )
+        .classList.add(
+            "show"
+        );
+
 }
+
+
+/* ==================================================
+   關閉我的委託
+================================================== */
+
+function closeAcceptedGuildQuests() {
+
+    document
+        .getElementById(
+            "acceptedGuildQuestOverlay"
+        )
+        .classList.remove(
+            "show"
+        );
+
+}
+
+
 
 /* ==================================================
    怪物
@@ -1910,81 +3916,86 @@ function openBattleItems() {
 
         });
 
-
     /* ==============================================
-       沒有道具
-    ============================================== */
+   建立道具格子
+============================================== */
 
-    if (
-        usableItems.length === 0
+    const maxSlots = 4;
+
+    for (
+        let i = 0;
+        i < maxSlots;
+        i++
     ) {
-
-        container.innerHTML =
-            "<p style='text-align:center;'>"
-            + "沒有可以使用的道具。"
-            + "</p>";
-
-        return;
-
-    }
-
-
-    /* ==============================================
-       建立道具
-    ============================================== */
-
-    usableItems.forEach(function (item) {
 
         const element =
             document.createElement("div");
-
 
         element.className =
             "inventory-item";
 
 
-        element.innerHTML =
+        /* 有道具 */
 
-            "<div class='inventory-icon'>"
-            + item.icon
-            + "</div>"
+        if (usableItems[i]) {
 
-            +
-
-            "<div class='inventory-name'>"
-            + item.name
-            + "</div>"
-
-            +
-
-            "<div class='inventory-amount'>"
-            + "× "
-            + inventory[item.type]
-            + "</div>"
-
-            +
-
-            "<div class='inventory-description'>"
-            + item.description
-            + "</div>";
+            const item =
+                usableItems[i];
 
 
-        element.onclick =
-            function () {
+            element.innerHTML =
 
-                useBattleItem(
-                    item.type
-                );
+                "<div class='inventory-icon'>"
+                + item.icon
+                + "</div>"
 
-            };
+                +
+
+                "<div class='inventory-name'>"
+                + item.name
+                + "</div>"
+
+                +
+
+                "<div class='inventory-amount'>"
+                + "× "
+                + inventory[item.type]
+                + "</div>"
+
+                +
+
+                "<div class='inventory-description'>"
+                + item.description
+                + "</div>";
+
+
+            element.onclick =
+                function () {
+
+                    useBattleItem(
+                        item.type
+                    );
+
+                };
+
+        }
+
+        /* 沒有道具 → 保留空格 */
+
+        else {
+
+            element.classList.add(
+                "empty"
+            );
+
+        }
 
 
         container.appendChild(
             element
         );
 
-    });
-
+    }
 
     document
         .getElementById(
@@ -2208,6 +4219,8 @@ let enemyHp = 0;
 let battleActive = false;
 
 let battleOver = false;
+
+let currentBattleEnemyType = null;
 
 
 /* ==================================================
@@ -2759,20 +4772,289 @@ function enterForest() {
     forestMoveDistance = 0;
     forestTimeDistance = 0;
 
-    showScreen(
-        "forestExploreScreen"
-    );
 
+    showScreen("forestExploreScreen");
     resetForestPosition();
+
+
+    /*
+       ==========================================
+       檢查是否有正在進行的護送委託
+       ==========================================
+    */
+
+    const escortQuest =
+        guildDailyState.quests.find(
+            quest =>
+                quest.type === "escort"
+                &&
+                quest.accepted
+                &&
+                !quest.completed
+                &&
+                !quest.failed
+        );
+
+
+    /*
+       ==========================================
+       第一次進入森林
+       在入口遇到商人
+       ==========================================
+    */
+
+    if (
+        escortQuest
+        &&
+        !escortQuest.escortStarted
+        &&
+        !escortQuest.forestEventCompleted
+    ) {
+
+        escortQuest.forestEventCompleted =
+            true;
+
+        escortQuest.escortStarted =
+            true;
+
+
+        const destination =
+            forestRegions[
+            escortQuest.destinationRegionKey
+            ];
+
+
+        if (destination) {
+
+            showMessage(
+                "🛒 商人：\n"
+                + "你就是公會派來的人嗎？\n\n"
+                + "麻煩你護送我到森林裡的"
+                + destination.name
+                + "。"
+            );
+
+        }
+
+    }
+
+    /*
+   ==========================================
+   檢查是否有正在進行的救助委託
+   ==========================================
+*/
+
+    const rescueQuest =
+        guildDailyState.quests.find(
+            quest =>
+                quest.type === "rescue"
+                &&
+                quest.accepted
+                &&
+                !quest.completed
+                &&
+                !quest.failed
+        );
+
+
+    /*
+       ==========================================
+       第一次進入森林
+       不在入口直接觸發
+       玩家需要自己找到迷路的冒險者
+       ==========================================
+    */
+
+    if (
+        rescueQuest
+        &&
+        !rescueQuest.rescueStarted
+        &&
+        !rescueQuest.forestEventCompleted
+    ) {
+
+        rescueQuest.rescueStarted =
+            true;
+
+    }
 
 }
 
+function setupRescueQuest(quest) {
+
+    const regionKeys = [
+        "centralForest",
+        "riverBank",
+        "rockWall"
+    ];
+
+    const regionKey =
+        regionKeys[
+        Math.floor(
+            Math.random() * regionKeys.length
+        )
+        ];
+
+    const point =
+        getRandomPointInRegion(regionKey);
+
+    if (!point) return;
+
+    rescueEventX = point.x;
+    rescueEventY = point.y;
+
+    quest.rescueRegionKey =
+        regionKey;
+
+    quest.rescueX =
+        point.x;
+
+    quest.rescueY =
+        point.y;
+}
+
+function checkEscortDestination() {
+
+    const escortQuest =
+        guildDailyState.quests.find(
+            quest =>
+                quest.type === "escort"
+                &&
+                quest.accepted
+                &&
+                !quest.completed
+                &&
+                !quest.failed
+                &&
+                quest.escortStarted
+        );
+
+    if (!escortQuest) return;
+
+    if (
+        escortQuest.destinationX === null
+        ||
+        escortQuest.destinationY === null
+    ) {
+        return;
+    }
+
+    const dx =
+        forestX - escortQuest.destinationX;
+
+    const dy =
+        forestY - escortQuest.destinationY;
+
+    const distance =
+        Math.sqrt(
+            dx * dx
+            +
+            dy * dy
+        );
+
+    // 距離指定地點 15 以內，就算抵達
+    if (distance > 15) {
+        return;
+    }
+
+    // 護送完成
+    escortQuest.progress =
+        escortQuest.amount;
+
+    escortQuest.townCompletionReady =
+        true;
+
+    escortQuest.escortStarted =
+        false;
+
+    showMessage(
+        "🛒 商人：\n"
+        + "謝謝你送我到這裡！\n\n"
+        + "護送成功！"
+    );
+}
+
+function checkRescueEvent() {
+
+    const rescueQuest =
+        guildDailyState.quests.find(
+            quest =>
+                quest.type === "rescue"
+                &&
+                quest.accepted
+                &&
+                !quest.completed
+                &&
+                !quest.failed
+                &&
+                quest.rescueStarted
+        );
+
+    if (!rescueQuest) return;
+
+
+    if (
+        rescueQuest.rescueX === null
+        ||
+        rescueQuest.rescueY === null
+    ) {
+        return;
+    }
+
+
+    const dx =
+        forestX -
+        rescueQuest.rescueX;
+
+    const dy =
+        forestY -
+        rescueQuest.rescueY;
+
+    const distance =
+        Math.sqrt(
+            dx * dx
+            +
+            dy * dy
+        );
+
+
+    // 距離迷路冒險者 12 以內
+    if (distance > 12) {
+        return;
+    }
+
+
+    rescueQuest.progress =
+        rescueQuest.amount;
+
+    rescueQuest.forestEventCompleted =
+        true;
+
+    rescueQuest.rescueStarted =
+        false;
+
+    rescueQuest.townCompletionReady =
+        true;
+
+
+    showMessage(
+        "🧭 迷路的冒險者：\n"
+        + "你也是冒險者嗎？\n\n"
+        + "太好了……我在這裡迷路了。\n"
+        + "喔!你是公會派來的人。\n"
+        + "謝謝你找到我！\n\n"
+        + "救助成功！"
+    );
+}
 
 /* ==================================================
    新戰鬥
 ================================================== */
 
 function startNewBattle(encounterType) {
+
+    currentBattleEnemyType =
+        encounterType;
 
     if (encounterType) {
 
@@ -3619,6 +5901,11 @@ function winBattle() {
     const defeatedCount =
         currentEnemies.length;
 
+    updateGuildHuntQuestProgress(
+        currentBattleEnemyType,
+        defeatedCount
+    );
+
 
     const totalExp =
         currentEnemy.exp
@@ -3709,6 +5996,95 @@ function winBattle() {
         "show"
     );
 
+}
+
+/* ==================================================
+   公會委託：討伐進度
+================================================== */
+
+function updateGuildHuntQuestProgress(
+    enemyType,
+    amount
+) {
+
+    ensureDailyGuildQuests();
+
+
+    for (
+        const quest
+        of guildDailyState.quests
+    ) {
+
+        if (
+            quest.type !== "hunt"
+            ||
+            !quest.accepted
+            ||
+            quest.completed
+            ||
+            quest.failed
+        ) {
+
+            continue;
+
+        }
+
+
+        if (
+            quest.enemyType
+            !==
+            enemyType
+        ) {
+
+            continue;
+
+        }
+
+
+        quest.progress += amount;
+
+
+        quest.progress =
+            Math.min(
+                quest.progress,
+                quest.amount
+            );
+
+    }
+
+}
+
+/* ==================================================
+   公會委託：探索進度
+================================================== */
+
+function updateGuildExploreQuestProgress(regionKey) {
+    ensureDailyGuildQuests();
+
+    const region = forestRegions[regionKey];
+    if (!region) return;
+
+    for (const quest of guildDailyState.quests) {
+        if (
+            quest.type !== "explore"
+            || !quest.accepted
+            || quest.completed
+            || quest.failed
+        ) continue;
+
+        if (
+            quest.regionKey
+            && quest.regionKey !== regionKey
+        ) {
+            continue;
+        }
+
+        quest.progress += 1;
+        quest.progress = Math.min(
+            quest.progress,
+            quest.amount
+        );
+    }
 }
 
 /* ==================================================
@@ -3984,6 +6360,10 @@ function showScreen(screenId) {
     updatePlayerUI();
     updateInventoryButton();
 
+    if (screenId === "townScreen") {
+        checkTownGuildQuestCompletion();
+    }
+
 
     /* ==================================================
        世界地圖顯示後重新計算地點位置
@@ -4107,6 +6487,10 @@ let forestY = 0;
 
 let forestHasLeftStart = false;
 
+// 救助委託
+let rescueEventX = null;
+let rescueEventY = null;
+
 /* ==================================================
    人物介面進入前的畫面
 ================================================== */
@@ -4128,6 +6512,20 @@ const forestEncounterDistance = 35;
 let forestTimeDistance = 0;
 
 const forestTimeDistanceUnit = 20;
+
+/* ==================================================
+   🌲 森林區域探索距離
+================================================== */
+
+const forestExploreDistanceRequired = 30;
+
+const forestExploreDistance = {
+    entrance: 0,
+    centralForest: 0,
+    riverBank: 0,
+    rockWall: 0,
+    deepForest: 0
+};
 
 /* ==================================================
    從遭遇表抽取結果
@@ -4417,7 +6815,19 @@ function moveForest(
     );
 
     forestMoveDistance += moveDistance;
+
     forestTimeDistance += moveDistance;
+
+
+    /* 🌲 累積目前區域的探索距離 */
+
+    updateForestExploreProgress(
+        moveDistance
+    );
+
+    checkEscortDestination();
+
+    checkRescueEvent();
 
 
     // 怪物遭遇判定
@@ -4456,6 +6866,7 @@ function moveForest(
         );
 
     }
+
 
 }
 
@@ -4750,6 +7161,79 @@ const forestRegions = {
 };
 
 /* ==================================================
+   🌲 在指定森林區域隨機取得一個座標
+================================================== */
+
+function getRandomPointInRegion(regionKey) {
+
+    const region =
+        forestRegions[regionKey];
+
+    if (!region) {
+        return null;
+    }
+
+    const polygon =
+        region.polygon;
+
+    /* 找出多邊形的範圍 */
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const point of polygon) {
+
+        minX = Math.min(minX, point[0]);
+        maxX = Math.max(maxX, point[0]);
+
+        minY = Math.min(minY, point[1]);
+        maxY = Math.max(maxY, point[1]);
+
+    }
+
+    /* 在範圍內隨機嘗試 */
+
+    for (let i = 0; i < 100; i++) {
+
+        const x =
+            minX +
+            Math.random() *
+            (maxX - minX);
+
+        const y =
+            minY +
+            Math.random() *
+            (maxY - minY);
+
+        if (
+            isPointInPolygon(
+                x,
+                y,
+                polygon
+            )
+        ) {
+
+            return {
+                x,
+                y
+            };
+
+        }
+
+    }
+
+    /* 理論上的保底 */
+
+    return {
+        x: polygon[0][0],
+        y: polygon[0][1]
+    };
+
+}
+
+/* ==================================================
    地圖Ⅰ 採集點
 ================================================== */
 
@@ -5020,6 +7504,9 @@ function triggerForestGather(
             1
         );
 
+        updateGuildCollectQuestProgress(
+            point.type
+        );
 
         advanceGameTime(10);
 
@@ -5038,6 +7525,80 @@ function triggerForestGather(
 
         forestGatherCooldown[index] =
             true;
+
+    }
+
+}
+
+/* ==================================================
+   公會委託：收集進度
+================================================== */
+
+function updateGuildCollectQuestProgress(
+    itemType
+) {
+
+    ensureDailyGuildQuests();
+
+
+    for (
+        const quest
+        of guildDailyState.quests
+    ) {
+
+        /*
+           只有：
+           ・收集委託
+           ・已接取
+           ・尚未完成
+           才需要處理
+        */
+
+        if (
+            quest.type !== "collect"
+            ||
+            !quest.accepted
+            ||
+            quest.completed
+            ||
+            quest.failed
+        ) {
+
+            continue;
+
+        }
+
+
+        if (
+            quest.itemType
+            !==
+            itemType
+        ) {
+
+            continue;
+
+        }
+
+
+        /*
+           收集委託的進度直接以
+           玩家目前持有數量判定。
+
+           這樣可以支援：
+
+           接取前就有材料
+           接取後再去採集
+        */
+
+        const ownedAmount =
+            inventory[itemType] || 0;
+
+
+        quest.progress =
+            Math.min(
+                ownedAmount,
+                quest.amount
+            );
 
     }
 
@@ -5117,7 +7678,9 @@ function checkForestStartPoint() {
         );
 
 
-    /* 已經離開起點 */
+    /*
+       玩家離開森林入口
+    */
 
     if (distance > 5) {
 
@@ -5128,7 +7691,10 @@ function checkForestStartPoint() {
     }
 
 
-    /* 尚未離開起點 */
+    /*
+       玩家還沒有離開入口
+       不做任何事情
+    */
 
     if (!forestHasLeftStart) {
 
@@ -5136,13 +7702,15 @@ function checkForestStartPoint() {
 
     }
 
-
-    /* 回到起點 */
+    /*
+       ==========================================
+       一般森林入口
+       ==========================================
+    */
 
     showForestStartChoice();
 
     forestHasLeftStart = false;
-
 }
 
 /* ==================================================
@@ -5259,6 +7827,126 @@ function getCurrentForestRegion() {
 
 
     return null;
+
+}
+
+/* ==================================================
+   🌲 森林探索進度
+================================================== */
+
+function updateForestExploreProgress(moveDistance) {
+
+    const region =
+        getCurrentForestRegion();
+
+    if (!region) {
+        return;
+    }
+
+
+    /* 找出目前區域的 key */
+
+    let regionKey = null;
+
+    for (const key in forestRegions) {
+
+        if (
+            forestRegions[key] === region
+        ) {
+
+            regionKey = key;
+            break;
+
+        }
+
+    }
+
+    if (!regionKey) {
+        return;
+    }
+
+
+    /* 累積這個區域的探索距離 */
+
+    forestExploreDistance[regionKey] +=
+        moveDistance;
+
+
+    /* 每達到 30 距離 = 完成一次探索 */
+
+    while (
+        forestExploreDistance[regionKey]
+        >= forestExploreDistanceRequired
+    ) {
+
+        forestExploreDistance[regionKey]
+            -= forestExploreDistanceRequired;
+
+
+        /* ==========================================
+           📜 公會探索委託
+        ========================================== */
+
+        updateGuildExploreQuestProgress(
+            regionKey
+        );
+
+
+        /* ==========================================
+           🏅 升階任務
+        ========================================== */
+
+        const task =
+            getCurrentRankUpTask();
+
+
+        if (
+            adventurer.rankUpTaskAccepted
+            &&
+            task
+            &&
+            task.type === "explore"
+        ) {
+
+            /*
+               如果是「探索不同區域」
+               就記錄區域，而不是單純 +1
+            */
+
+            if (
+                !adventurer.rankUpExploredRegions
+            ) {
+
+                adventurer.rankUpExploredRegions =
+                    [];
+
+            }
+
+
+            if (
+                !adventurer.rankUpExploredRegions
+                    .includes(regionKey)
+            ) {
+
+                adventurer.rankUpExploredRegions
+                    .push(regionKey);
+
+                adventurer.rankUpTaskProgress =
+                    adventurer.rankUpExploredRegions.length;
+
+                adventurer.rankUpTaskProgress =
+                    Math.min(
+                        adventurer.rankUpTaskProgress,
+                        task.target
+                    );
+
+                updateRankUpTaskUI();
+
+            }
+
+        }
+
+    }
 
 }
 
@@ -6047,15 +8735,6 @@ function createCharacter() {
 
     document.getElementById(
         "explorePlayer"
-    ).src =
-        imagePath;
-
-    /* =========================
-    ④ 森林探索人物按鈕
-    ========================= */
-
-    document.getElementById(
-        "forestPlayerAvatar"
     ).src =
         imagePath;
 
