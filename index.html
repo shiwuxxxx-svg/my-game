@@ -613,6 +613,10 @@
 
                 </div>
 
+                <button id="adventurerRegisterButton" class="action-button" onclick="handleAdventurerRegistration()">
+                    📝 冒險者登錄
+                </button>
+
                 <!-- ==================================================
      🏅 升階任務
 ================================================== -->
@@ -734,32 +738,32 @@
      🛒 冒險者商會
 ================================================== -->
 
-<div id="adventurerShopOverlay" class="inventory-overlay">
+        <div id="adventurerShopOverlay" class="inventory-overlay">
 
-    <div class="inventory-window guild-window">
+            <div class="inventory-window guild-window">
 
-        <h2 class="inventory-title">
-            🛒 冒險者商會
-        </h2>
+                <h2 class="inventory-title">
+                    🛒 冒險者商會
+                </h2>
 
-        <p style="text-align:center;">
-            💰 持有 Gold：
-            <strong id="adventurerShopGold">
-                100
-            </strong>
-            G
-        </p>
+                <p style="text-align:center;">
+                    💰 持有 Gold：
+                    <strong id="adventurerShopGold">
+                        100
+                    </strong>
+                    G
+                </p>
 
-        <div id="adventurerShopList">
+                <div id="adventurerShopList">
+                </div>
+
+                <button class="action-button" onclick="closeAdventurerShop()">
+                    ← 返回
+                </button>
+
+            </div>
+
         </div>
-
-        <button class="action-button" onclick="closeAdventurerShop()">
-            ← 返回
-        </button>
-
-    </div>
-
-</div>
 
         <!-- ==================================================
             道具店

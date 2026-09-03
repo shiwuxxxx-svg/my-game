@@ -387,6 +387,30 @@ const player = {
    7 傳說中的冒險者
 */
 
+function handleAdventurerRegistration() {
+
+    if (adventurer.registered) {
+        return;
+    }
+
+    adventurer.registered = true;
+
+    adventurer.rankIndex = 0;
+    adventurer.exp = 0;
+    adventurer.rankUpReady = false;
+    adventurer.rankUpTaskAccepted = false;
+    adventurer.rankUpTaskProgress = 0;
+    adventurer.rankUpExploredRegions = [];
+
+    updateAdventurerUI();
+
+    showMessage(
+        "📝 冒險者登錄完成！\n\n"
+        + "從今天開始，你就是正式的冒險者了。\n\n"
+        + "目前等級：初心者"
+    );
+}
+
 const adventurerRanks = [
     {
         name: "初心者",
@@ -432,14 +456,16 @@ const adventurerRanks = [
 
 
 const adventurer = {
+    registered: false,
+
     rankIndex: 0,
     exp: 0,
+
     rankUpReady: false,
     rankUpTaskAccepted: false,
     rankUpTaskProgress: 0,
     rankUpExploredRegions: []
 };
-
 /* ==================================================
    🏅 冒險者升階任務
 ================================================== */
@@ -810,6 +836,62 @@ function updateAdventurerUI() {
             "adventurerExp"
         );
 
+    const armbandElement =
+        document.getElementById(
+            "adventurerArmband"
+        );
+
+    const registerButton =
+        document.getElementById(
+            "adventurerRegisterButton"
+        );
+
+
+    /* ==============================================
+       尚未登錄
+    ============================================== */
+
+    if (!adventurer.registered) {
+
+        if (rankElement) {
+            rankElement.textContent =
+                "未登錄";
+        }
+
+        if (expElement) {
+            expElement.textContent =
+                "-";
+        }
+
+        if (armbandElement) {
+            armbandElement.textContent =
+                "-";
+        }
+
+        if (registerButton) {
+
+            registerButton.style.display =
+                "block";
+
+            registerButton.textContent =
+                "📝 冒險者登錄";
+
+            registerButton.onclick =
+                function () {
+                    handleAdventurerRegistration();
+                };
+
+        }
+
+        updateRankUpTaskUI();
+
+        return;
+    }
+
+
+    /* ==============================================
+       已登錄
+    ============================================== */
 
     const rank =
         getAdventurerRank();
@@ -844,8 +926,95 @@ function updateAdventurerUI() {
 
     }
 
+
+    if (armbandElement) {
+
+        armbandElement.textContent =
+            rank.armband;
+
+    }
+
+
+    if (registerButton) {
+
+        registerButton.style.display =
+            "block";
+
+        registerButton.textContent =
+            "⬆️ 升階";
+
+        registerButton.onclick =
+            function () {
+                openRankUp();
+            };
+    }
+
+
+    updateRankUpTaskUI();
+
 }
 
+function openRankUp() {
+
+    if (!adventurer.registered) {
+
+        showMessage(
+            "📝 請先完成冒險者登錄。"
+        );
+
+        return;
+    }
+
+
+    /* ==============================================
+       還沒達到升階條件
+    ============================================== */
+
+    if (!adventurer.rankUpReady) {
+
+        const rank =
+            getAdventurerRank();
+
+        if (rank.nextExp !== null) {
+
+            showMessage(
+                "⬆️ 目前還不能升階。\n\n"
+                + "冒險者經驗："
+                + adventurer.exp
+                + " / "
+                + rank.nextExp
+                + "\n\n"
+                + "累積足夠的冒險者經驗後，"
+                + "才能進行升階任務。"
+            );
+
+        }
+
+        return;
+    }
+
+
+    /* ==============================================
+       已達到升階條件
+    ============================================== */
+
+    const taskBox =
+        document.getElementById(
+            "rankUpTaskBox"
+        );
+
+    if (!taskBox) {
+        return;
+    }
+
+
+    taskBox.style.display =
+        "block";
+
+
+    updateRankUpTaskUI();
+
+}
 
 /* ==================================================
    增加冒險者經驗
@@ -2035,6 +2204,19 @@ function closeSellShop() {
 
 function openAdventurerShop() {
 
+    if (!adventurer.registered) {
+
+        showMessage(
+            "📝 你還沒有登錄成為冒險者。\n\n"
+            + "完成冒險者登錄後，"
+            + "才能使用冒險者商會。"
+        );
+
+        return;
+    }
+
+    // ↓↓↓ 原本的內容繼續放這裡
+
     const container =
         document.getElementById(
             "adventurerShopList"
@@ -3111,7 +3293,7 @@ function completeSelectedGuildQuest() {
 
     /*
        第一次按：
-
+ 
        接取委託
     */
 
@@ -3194,7 +3376,7 @@ function completeSelectedGuildQuest() {
         /*
            收集任務可以在接取以前
            就已經持有材料。
-
+ 
            所以接取後立即檢查。
         */
 
@@ -3233,7 +3415,7 @@ function completeSelectedGuildQuest() {
 
     /*
        第二次按：
-
+ 
        完成委託
     */
 
@@ -3454,6 +3636,18 @@ function closeGuildQuests() {
 ================================================== */
 
 function openGuildQuests() {
+
+    if (!adventurer.registered) {
+
+        showMessage(
+            "📝 你還沒有登錄成為冒險者。\n\n"
+            + "請先完成冒險者登錄，"
+            + "才能接受公會委託。"
+        );
+
+        return;
+    }
+
 
     ensureDailyGuildQuests();
 
@@ -6183,9 +6377,47 @@ function loseBattle() {
             getPlayerStats();
 
 
+        /* --------------------------------
+           死亡懲罰
+        -------------------------------- */
+
+        const expToNextLevel =
+            getExpToNextLevel();
+
+        const expPenalty =
+            Math.floor(
+                expToNextLevel * 0.1
+            );
+
+        const medicalFee =
+            20
+            + player.level * 10;
+
+
+        /* EXP 最低為 0 */
+
+        player.exp =
+            Math.max(
+                0,
+                player.exp - expPenalty
+            );
+
+
+        /* 扣除醫療費 */
+
+        player.gold =
+            Math.max(
+                0,
+                player.gold - medicalFee
+            );
+
+
+        /* --------------------------------
+           HP / MP 完全恢復
+        -------------------------------- */
+
         player.currentHp =
             stats.maxHp;
-
 
         player.currentMp =
             stats.maxMp;
@@ -6200,14 +6432,17 @@ function loseBattle() {
         overlay.classList.remove("show");
 
 
-        setTimeout(function () {
-
-            showMessage(
-                "你在病院醒了過來。"
-                + " HP 與 MP 已完全恢復！"
-            );
-
-        }, 300);
+        showMessage(
+            "你在病院醒了過來。"
+            + " HP 與 MP 已完全恢復！"
+            + "\n\n"
+            + "你的頭有點痛"
+            + "\nEXP -"
+            + expPenalty
+            + "\n你支付了醫療費💰 -"
+            + medicalFee
+            + " G"
+        );
 
     }, 2200);
 
@@ -6392,9 +6627,16 @@ function showScreen(screenId) {
 
 function showMessage(message) {
 
-    document.getElementById(
-        "messageText"
-    ).textContent = message;
+    const messageElement =
+        document.getElementById("messageText");
+
+
+    messageElement.textContent =
+        message;
+
+    messageElement.style.whiteSpace =
+        "pre-line";
+
 
     document.getElementById(
         "messageBox"
@@ -7583,9 +7825,9 @@ function updateGuildCollectQuestProgress(
         /*
            收集委託的進度直接以
            玩家目前持有數量判定。
-
+ 
            這樣可以支援：
-
+ 
            接取前就有材料
            接取後再去採集
         */
@@ -8810,3 +9052,5 @@ updateInventoryButton();
 updateForestPosition();
 
 updateMiniMapPosition();
+
+updateAdventurerUI();
