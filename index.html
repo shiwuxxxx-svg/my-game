@@ -82,6 +82,32 @@
                 開始冒險
             </button>
 
+            <button class="battle-test-float-button" onclick="openBattleTest()" title="戰鬥測試">
+                ⚔️
+            </button>
+
+        </div>
+
+        <!-- ==================================================
+             戰鬥測試
+        ================================================== -->
+
+        <div id="battleTestScreen" class="screen page">
+
+            <button class="back-button" onclick="showScreen('characterCreateScreen')">
+                ← 返回
+            </button>
+
+            <h1 class="page-title">⚔️ 戰鬥測試</h1>
+
+            <div class="adventure-card">
+
+                <h2>選擇怪物</h2>
+
+                <div id="battleTestMonsterList"></div>
+
+            </div>
+
         </div>
 
         <!-- ==================================================
@@ -1090,11 +1116,6 @@
                     ← 離開森林
                 </button>
 
-
-                <button class="forest-battle-button" onclick="startBattleFromForest()">
-                    ⚔️ 戰鬥測試
-                </button>
-
             </div>
 
 
@@ -1133,8 +1154,8 @@
 
         <div id="forestScreen" class="screen page">
 
-            <button class="back-button" onclick="leaveBattle()">
-                ← 返回世界地圖
+            <button class="back-button" onclick="showScreen('battleTestScreen')">
+                ← 返回
             </button>
 
 
@@ -1150,8 +1171,7 @@
                 </p>
 
 
-                <div class="enemy" id="enemyIcon"></div>
-
+                <div class="enemy" id="enemyDisplay"></div>
 
                 <h2 class="enemy-name" id="enemyName">
                     森林史萊姆
@@ -1173,6 +1193,36 @@
                     <div class="hp-bar">
 
                         <div id="enemyHpFill" class="hp-fill enemy-hp-fill"></div>
+
+                    </div>
+
+                    <div class="battle-action-timeline">
+
+                        <div class="action-timeline-label">
+                            ⚔️ 行動
+                        </div>
+
+                        <div class="action-timeline">
+
+                            <div class="action-timeline-start">
+                                0
+                            </div>
+
+                            <div id="actionTrack" class="action-track">
+
+                                <div id="playerActionPoint" class="action-point player-action-point">
+                                    🧑
+                                </div>
+
+                                <div id="enemyActionPoints"></div>
+
+                            </div>
+
+                            <div class="action-timeline-end">
+                                100
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -1257,18 +1307,13 @@
                         🏃 逃跑
                     </button>
 
-
-                    <button id="newEnemyButton" class="action-button" onclick="console.log('按到了'); startNewBattle()">
-                        👾 尋找下一隻怪物
-                    </button>
-
                 </div>
 
                 <!-- ==================================================
      戰鬥道具視窗
 ================================================== -->
 
-                <div id="battleItemOverlay" class="inventory-overlay">
+                <div id="battleItemsOverlay" class="inventory-overlay">
 
                     <div class="inventory-window">
 

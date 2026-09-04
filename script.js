@@ -3963,6 +3963,7 @@ const monsters = [
     {
         id: "slime",
         name: "森林史萊姆",
+        image: "images/monsters/slime.png",
         icon: "🟢",
         hp: 30,
         attack: 7,
@@ -3976,6 +3977,7 @@ const monsters = [
     {
         id: "wolf",
         name: "森林狼",
+        image: "images/monsters/wolf.png",
         icon: "🐺",
         hp: 18,
         attack: 8,
@@ -3990,6 +3992,7 @@ const monsters = [
         id: "bat",
         name: "蝙蝠",
         icon: "🦇",
+        image: "images/monsters/bat.png",
         hp: 14,
         attack: 5,
         defense: 1,
@@ -4003,6 +4006,7 @@ const monsters = [
         id: "frog",
         name: "森林青蛙",
         icon: "🐸",
+        image: "images/monsters/frog.png",
         hp: 20,
         attack: 6,
         defense: 1,
@@ -4015,6 +4019,7 @@ const monsters = [
     {
         id: "bear",
         name: "森林熊",
+        image: "images/monsters/bear.png",
         icon: "🐻",
         hp: 45,
         attack: 11,
@@ -4036,6 +4041,12 @@ const monsters = [
 ============================================== */
 
 function openBattleItems() {
+
+    if (!battleActive || battleOver || !playerActionWaiting) {
+        return;
+    }
+
+    actionValuePaused = true;
 
     if (
         !battleActive
@@ -4207,36 +4218,10 @@ function openBattleItems() {
 function closeBattleItems() {
 
     document
-        .getElementById(
-            "battleItemOverlay"
-        )
+        .getElementById("battleItemsOverlay")
         .classList.remove("show");
 
-
-    /* 如果還在戰鬥，就恢復玩家操作 */
-
-    if (
-        battleActive
-        &&
-        !battleOver
-    ) {
-
-        document.getElementById(
-            "attackButton"
-        ).disabled = false;
-
-
-        document.getElementById(
-            "itemButton"
-        ).disabled = false;
-
-
-        document.getElementById(
-            "escapeButton"
-        ).disabled = false;
-
-    }
-
+    updateBattleActionButtons();
 }
 
 
@@ -4245,6 +4230,10 @@ function closeBattleItems() {
 ============================================== */
 
 function useBattleItem(type) {
+
+    if (!battleActive || battleOver || !playerActionWaiting) {
+        return;
+    }
 
     if (
         !battleActive
@@ -4380,20 +4369,7 @@ function useBattleItem(type) {
     ).innerHTML =
         message;
 
-
-    /* ==============================================
-       使用道具算一次行動
-       → 怪物反擊
-    ============================================== */
-
-    setTimeout(
-        function () {
-
-            enemyAttack();
-
-        },
-        500
-    );
+    finishPlayerAction();
 
 }
 
@@ -4416,6 +4392,342 @@ let battleOver = false;
 
 let currentBattleEnemyType = null;
 
+// ==========================================
+// 戰鬥行動值
+// ==========================================
+
+let playerActionValue = 0;
+
+// 每一隻怪物都有自己的行動值
+let enemyActionValues = [];
+
+// requestAnimationFrame
+let battleActionTimer = null;
+
+// 玩家行動值滿了之後，等待玩家選擇行動
+let playerActionWaiting = false;
+
+// 暫停行動值累積
+let actionValuePaused = false;
+
+let enemyActionMessageBusy = false;
+
+let enemyActionQueue = [];
+
+let battleMessages = [];
+
+function addBattleMessage(message) {
+
+    battleMessages.push(message);
+
+    // 最多保留兩行
+    if (battleMessages.length > 2) {
+        battleMessages.shift();
+    }
+
+    const battleLogElement =
+        document.getElementById("battleLog");
+
+    if (!battleLogElement) return;
+
+    battleLogElement.innerHTML =
+        battleMessages
+            .map(message => `<div>${message}</div>`)
+            .join("");
+}
+
+// ==========================================
+// 戰鬥行動系統
+// ==========================================
+
+function startBattleActionSystem() {
+
+    stopBattleActionSystem();
+
+    actionValuePaused = false;
+    playerActionWaiting = false;
+
+    let lastTime = performance.now();
+
+    function loop(now) {
+
+        if (!battleActive || battleOver) {
+            battleActionTimer = null;
+            return;
+        }
+
+        // 取得經過的時間（秒）
+        // 最多一次算 0.1 秒，避免手機切到背景後突然跳太多
+        const deltaTime = Math.min(
+            (now - lastTime) / 1000,
+            0.1
+        );
+
+        lastTime = now;
+
+        if (!actionValuePaused) {
+            updateBattleActionValues(deltaTime);
+        }
+
+        updateBattleActionUI();
+
+        battleActionTimer = requestAnimationFrame(loop);
+    }
+
+    battleActionTimer = requestAnimationFrame(loop);
+}
+
+
+function stopBattleActionSystem() {
+
+    if (battleActionTimer !== null) {
+
+        cancelAnimationFrame(battleActionTimer);
+
+        battleActionTimer = null;
+    }
+}
+
+
+// ==========================================
+// 行動值增加
+// ==========================================
+
+function updateBattleActionValues(deltaTime) {
+
+    // 玩家已經滿 100，正在選擇行動
+    if (playerActionWaiting) {
+        return;
+    }
+
+    const playerStats = getPlayerStats();
+
+    /*
+        原本定案：
+
+        每 0.1 秒增加
+        2 + (SPD × 0.1)
+
+        換算成每秒：
+
+        (2 + SPD × 0.1) × 10
+    */
+
+    const playerSpeedPerSecond =
+        (2 + playerStats.speed * 0.1) * 10;
+
+    playerActionValue +=
+        playerSpeedPerSecond * deltaTime;
+
+    playerActionValue = Math.min(
+        playerActionValue,
+        100
+    );
+
+
+    // --------------------------
+    // 怪物
+    // --------------------------
+
+    for (let i = 0; i < currentEnemies.length; i++) {
+
+        const enemy = currentEnemies[i];
+
+        // 死掉的怪物不再累積
+        if (!enemy || enemy.currentHp <= 0) {
+            continue;
+        }
+
+        const enemySpeedPerSecond =
+            (2 + enemy.speed * 0.1) * 10;
+
+        enemyActionValues[i] +=
+            enemySpeedPerSecond * deltaTime;
+
+        enemyActionValues[i] = Math.min(
+            enemyActionValues[i],
+            100
+        );
+    }
+
+    // 增加完行動值後，檢查誰可以行動
+    checkBattleActions();
+
+}
+
+
+// ==========================================
+// 判斷誰可以行動
+// ==========================================
+
+function checkBattleActions() {
+
+    if (enemyActionMessageBusy) {
+        return;
+    }
+
+    if (!battleActive || battleOver) {
+        return;
+    }
+
+    if (playerActionWaiting) {
+        return;
+    }
+
+
+    // --------------------------
+    // 先檢查怪物
+    // --------------------------
+
+    for (let i = 0; i < currentEnemies.length; i++) {
+
+        const enemy = currentEnemies[i];
+
+        if (!enemy || enemy.currentHp <= 0) {
+            continue;
+        }
+
+        if (enemyActionValues[i] >= 100) {
+
+            // 回到起點
+            enemyActionValues[i] = 0;
+
+            // 這一隻怪物立刻行動
+            enemyAttackSingle(i);
+
+            return;
+        }
+    }
+
+
+    // --------------------------
+    // 再檢查玩家
+    // --------------------------
+
+    if (playerActionValue >= 100) {
+
+        playerActionValue = 100;
+
+        playerActionWaiting = true;
+
+        // 玩家選擇行動時，整條時間軸暫停
+        actionValuePaused = true;
+
+        updateBattleActionButtons();
+    }
+}
+
+
+// ==========================================
+// 玩家完成一次行動
+// ==========================================
+
+function finishPlayerAction() {
+
+    playerActionValue = 0;
+
+    playerActionWaiting = false;
+
+    actionValuePaused = false;
+
+    updateBattleActionButtons();
+
+    updateBattleActionUI();
+}
+
+// ==========================================
+// 更新行動軌道
+// ==========================================
+
+function updateBattleActionUI() {
+
+    const playerPoint =
+        document.getElementById("playerActionPoint");
+
+    const enemyPoints =
+        document.getElementById("enemyActionPoints");
+
+    if (!playerPoint || !enemyPoints) {
+        return;
+    }
+
+
+    // --------------------------
+    // 玩家位置
+    // --------------------------
+
+    playerPoint.style.left =
+        playerActionValue + "%";
+
+
+    // --------------------------
+    // 怪物位置
+    // --------------------------
+
+    enemyPoints.innerHTML = "";
+
+    for (let i = 0; i < currentEnemies.length; i++) {
+
+        const enemy = currentEnemies[i];
+
+        if (!enemy) {
+            continue;
+        }
+
+        const point =
+            document.createElement("div");
+
+        point.className =
+            "action-point enemy-action-point";
+
+        point.dataset.enemyIndex = i;
+
+        point.textContent = enemy.icon;
+
+        // 死掉的怪物不顯示
+        if (enemy.currentHp <= 0) {
+            point.classList.add("dead");
+        }
+
+        point.style.left =
+            enemyActionValues[i] + "%";
+
+        enemyPoints.appendChild(point);
+    }
+}
+
+// ==========================================
+// 戰鬥按鈕控制
+// ==========================================
+
+function updateBattleActionButtons() {
+
+    const attackButton =
+        document.getElementById("attackButton");
+
+    const itemButton =
+        document.getElementById("itemButton");
+
+    const escapeButton =
+        document.getElementById("escapeButton");
+
+    const canAct =
+        battleActive &&
+        !battleOver &&
+        playerActionWaiting;
+
+    if (attackButton) {
+        attackButton.disabled = !canAct;
+    }
+
+    if (itemButton) {
+        itemButton.disabled = !canAct;
+    }
+
+    if (escapeButton) {
+        escapeButton.disabled = !canAct;
+    }
+}
 
 /* ==================================================
    玩家戰鬥數值
@@ -5273,6 +5585,7 @@ function startNewBattle(encounterType) {
 
     }
 
+
     /* ==================================================
        決定怪物數量
     ================================================== */
@@ -5330,21 +5643,11 @@ function startNewBattle(encounterType) {
 
     battleOver = false;
 
-
-    document.getElementById(
-        "attackButton"
-    ).style.display =
-        "block";
+    showScreen("forestScreen");
 
 
     document.getElementById(
         "attackButton"
-    ).disabled =
-        false;
-
-
-    document.getElementById(
-        "newEnemyButton"
     ).style.display =
         "block";
 
@@ -5354,19 +5657,9 @@ function startNewBattle(encounterType) {
         "block";
 
     document.getElementById(
-        "escapeButton"
-    ).disabled =
-        false;
-
-    document.getElementById(
         "itemButton"
     ).style.display =
         "block";
-
-    document.getElementById(
-        "itemButton"
-    ).disabled =
-        false;
 
     document.getElementById(
         "levelUpBox"
@@ -5380,48 +5673,32 @@ function startNewBattle(encounterType) {
     updatePlayerUI();
 
 
-    const playerStats =
-        getPlayerStats();
+    // ==========================================
+    // 初始化行動值
+    // ==========================================
 
+    playerActionValue = 0;
 
-    if (
-        currentEnemy.speed
-        > playerStats.speed
-    ) {
+    enemyActionValues =
+        currentEnemies.map(() => 0);
 
-        document.getElementById(
-            "battleLog"
-        ).innerHTML =
-            currentEnemy.icon
-            + " "
-            + currentEnemy.name
-            + " 比你快！<br>"
-            + "牠先攻！";
+    playerActionWaiting = false;
 
+    actionValuePaused = false;
 
-        setTimeout(
-            function () {
+    battleMessages = [];
 
-                enemyAttack();
+    addBattleMessage(
+        currentEnemy.icon + " " +
+        currentEnemy.name +
+        " 出現了！"
+    );
 
-            },
-            500
-        );
+    updateBattleActionButtons();
 
-    }
+    updateBattleActionUI();
 
-    else {
-
-        document.getElementById(
-            "battleLog"
-        ).innerHTML =
-            currentEnemy.icon
-            + " "
-            + currentEnemy.name
-            + " 出現了！<br>"
-            + "你先攻！";
-
-    }
+    startBattleActionSystem();
 
 }
 
@@ -5440,26 +5717,49 @@ function updateEnemyUI() {
 
     console.log("UI怪物數量：", currentEnemyCount);
 
-    const enemyIcon =
+    const enemyDisplay =
         document.getElementById(
-            "enemyIcon"
+            "enemyDisplay"
         );
 
-    enemyIcon.innerHTML = "";
+    if (enemyDisplay) {
 
-    for (
-        let i = 0;
-        i < currentEnemyCount;
-        i++
-    ) {
+        enemyDisplay.innerHTML = "";
 
-        enemyIcon.innerHTML +=
-            "<span>"
-            + currentEnemy.icon
-            + "</span> ";
+        for (
+            let i = 0;
+            i < currentEnemies.length;
+            i++
+        ) {
+
+            const enemy =
+                currentEnemies[i];
+
+            if (!enemy || enemy.currentHp <= 0) {
+                continue;
+            }
+
+            const img =
+                document.createElement("img");
+
+            img.src = enemy.image;
+
+            img.alt = enemy.name;
+
+            img.className =
+                "battle-enemy-image";
+
+            img.dataset.enemyIndex = i;
+
+            if (i === targetEnemyIndex) {
+                img.classList.add("target");
+            }
+
+            enemyDisplay.appendChild(img);
+
+        }
 
     }
-
 
     document.getElementById(
         "enemyName"
@@ -5511,6 +5811,10 @@ function updateEnemyUI() {
 ================================================== */
 
 function attackEnemy() {
+
+    if (!battleActive || battleOver || !playerActionWaiting) {
+        return;
+    }
 
     if (
         !battleActive
@@ -5596,25 +5900,16 @@ function attackEnemy() {
 
         }
 
-
-        enemyHp =
-            targetEnemy.currentHp;
-
-
-        document.getElementById(
-            "battleLog"
-        ).innerHTML =
-
+        message =
             "你對 "
             + targetEnemy.name
             + " 造成了 "
-            + "<strong>"
             + damage
-            + "</strong>"
             + " 點傷害！";
 
     }
 
+    addBattleMessage(message);
 
     updateEnemyUI();
 
@@ -5681,20 +5976,7 @@ function attackEnemy() {
             + "下一隻怪物出現！";
 
     }
-
-
-    /* ==================================================
-       怪物反擊
-    ================================================== */
-
-    setTimeout(
-        function () {
-
-            enemyAttack();
-
-        },
-        500
-    );
+    finishPlayerAction();
 
 }
 
@@ -5704,16 +5986,9 @@ function attackEnemy() {
 
 function escapeBattle() {
 
-    if (
-        !battleActive
-        ||
-        battleOver
-    ) {
-
+    if (!battleActive || battleOver || !playerActionWaiting) {
         return;
-
     }
-
 
     const escapeButton =
         document.getElementById(
@@ -5743,6 +6018,8 @@ function escapeBattle() {
 
     if (success) {
 
+        stopBattleActionSystem();
+
         /* ==============================================
            逃跑成功
         ============================================== */
@@ -5763,13 +6040,6 @@ function escapeBattle() {
 
         attackButton.style.display =
             "none";
-
-
-        document.getElementById(
-            "newEnemyButton"
-        ).style.display =
-            "none";
-
 
         /* 回到森林探索 */
 
@@ -5804,19 +6074,7 @@ function escapeBattle() {
 
         /* 怪物反擊 */
 
-        setTimeout(
-            function () {
-
-                enemyAttack();
-
-                /*
-                   怪物攻擊結束後，
-                   escapeButton 會重新啟用
-                */
-
-            },
-            500
-        );
+        finishPlayerAction();
 
     }
 
@@ -5826,232 +6084,116 @@ function escapeBattle() {
    怪物攻擊
 ================================================== */
 
-function enemyAttack() {
+function enemyAttackSingle(enemyIndex) {
 
-    if (
-        !battleActive
-        ||
-        battleOver
-    ) {
+    if (!battleActive || battleOver) return;
 
-        return;
+    const enemy = currentEnemies[enemyIndex];
 
-    }
+    if (!enemy || enemy.currentHp <= 0) return;
 
+    // 如果目前正在處理其他怪物，就排隊
+    if (enemyActionMessageBusy) {
 
-    /* ==================================================
-       跳過已經死亡的怪物
-    ================================================== */
-
-    while (
-
-        attackingEnemyIndex
-        <
-        currentEnemies.length
-
-        &&
-
-        currentEnemies[
-            attackingEnemyIndex
-        ].currentHp <= 0
-
-    ) {
-
-        attackingEnemyIndex++;
-
-    }
-
-
-    /* ==================================================
-       所有怪物都已經攻擊完
-    ================================================== */
-
-    if (
-        attackingEnemyIndex
-        >=
-        currentEnemies.length
-    ) {
-
-        attackingEnemyIndex = 0;
-
-
-
-        document.getElementById(
-            "attackButton"
-        ).disabled = false;
-
-
-        return;
-
-    }
-
-
-    const attackingEnemy =
-        currentEnemies[
-        attackingEnemyIndex
-        ];
-
-
-    const playerStats =
-        getPlayerStats();
-
-
-    /* ==================================================
-       怪物攻擊被玩家閃避
-    ================================================== */
-
-    if (
-        checkEvasion(
-            playerStats.evasion
-        )
-    ) {
-
-        document.getElementById(
-            "battleLog"
-        ).innerHTML +=
-
-            "<br>你閃開了 "
-            + attackingEnemy.name
-            + " 的攻擊！";
-
-    }
-
-
-    /* ==================================================
-       怪物造成傷害
-    ================================================== */
-
-    else {
-
-        const damage =
-            calculateDamage(
-                attackingEnemy.attack,
-                playerStats.defense
-            );
-
-
-        player.currentHp -=
-            damage;
-
-
-        if (
-            player.currentHp < 0
-        ) {
-
-            player.currentHp = 0;
-
+        if (!enemyActionQueue.includes(enemyIndex)) {
+            enemyActionQueue.push(enemyIndex);
         }
 
-
-        document.getElementById(
-            "battleLog"
-        ).innerHTML +=
-
-            "<br>"
-            + attackingEnemy.icon
-            + " "
-            + attackingEnemy.name
-            + " 對你造成了 "
-            + "<strong>"
-            + damage
-            + "</strong>"
-            + " 點傷害！";
-
+        return;
     }
 
+    enemyActionMessageBusy = true;
 
-    updatePlayerUI();
+    enemyActionValues[enemyIndex] = 0;
 
+    const playerStats = getPlayerStats();
 
-    /* ==================================================
-       玩家死亡
-    ================================================== */
+    let message = "";
 
-    if (
-        player.currentHp <= 0
-    ) {
+    // --------------------------
+    // 閃避
+    // --------------------------
+
+    if (Math.random() * 100 < playerStats.evasion) {
+
+        message =
+            `${enemy.icon} ${enemy.name} 的攻擊被你閃開了！`;
+
+    } else {
+
+        const baseDamage =
+            enemy.attack - playerStats.defense;
+
+        const multiplier =
+            0.9 + Math.random() * 0.2;
+
+        const damage =
+            Math.max(
+                1,
+                Math.floor(baseDamage * multiplier)
+            );
+
+        player.currentHp -= damage;
+
+        if (player.currentHp < 0) {
+            player.currentHp = 0;
+        }
+
+        message =
+            `${enemy.icon} ${enemy.name} 攻擊了你，造成 ${damage} 點傷害！`;
+
+        updateBattlePlayerUI();
+    }
+
+    // 顯示戰鬥訊息
+    addBattleMessage(message);
+
+    updateBattleActionUI();
+
+    // --------------------------
+    // 玩家死亡
+    // --------------------------
+
+    if (player.currentHp <= 0) {
+
+        enemyActionMessageBusy = false;
+        enemyActionQueue = [];
 
         loseBattle();
 
         return;
-
     }
 
+    // --------------------------
+    // 等待訊息顯示
+    // --------------------------
 
-    /* ==================================================
-       換下一隻怪物攻擊
-    ================================================== */
+    setTimeout(() => {
 
-    attackingEnemyIndex++;
+        enemyActionMessageBusy = false;
 
+        // 有下一隻怪物排隊
+        while (enemyActionQueue.length > 0) {
 
-    /* 跳過已死亡的怪物 */
+            const nextEnemyIndex =
+                enemyActionQueue.shift();
 
-    while (
+            const nextEnemy =
+                currentEnemies[nextEnemyIndex];
 
-        attackingEnemyIndex
-        <
-        currentEnemies.length
+            // 如果這隻怪已經死了，就跳過
+            if (!nextEnemy || nextEnemy.currentHp <= 0) {
+                continue;
+            }
 
-        &&
+            enemyAttackSingle(nextEnemyIndex);
+            return;
+        }
 
-        currentEnemies[
-            attackingEnemyIndex
-        ].currentHp <= 0
+        // 沒有排隊的怪物
+        checkBattleActions();
 
-    ) {
-
-        attackingEnemyIndex++;
-
-    }
-
-
-    /* ==================================================
-       還有怪物 → 下一隻攻擊
-    ================================================== */
-
-    if (
-        attackingEnemyIndex
-        <
-        currentEnemies.length
-    ) {
-
-        setTimeout(
-            function () {
-
-                enemyAttack();
-
-            },
-            500
-        );
-
-    }
-
-
-    /* ==================================================
-       所有怪物攻擊完
-    ================================================== */
-
-    else {
-
-        attackingEnemyIndex = 0;
-
-
-        document.getElementById(
-            "attackButton"
-        ).disabled = false;
-
-
-        document.getElementById(
-            "escapeButton"
-        ).disabled = false;
-
-        document.getElementById(
-            "itemButton"
-        ).disabled = false;
-
-    }
-
+    }, 700);
 }
 
 /* ==================================================
@@ -6059,6 +6201,11 @@ function enemyAttack() {
 ================================================== */
 
 function winBattle() {
+
+    stopBattleActionSystem();
+
+    playerActionWaiting = false;
+    actionValuePaused = true;
 
     advanceGameTime(10);
 
@@ -6081,12 +6228,6 @@ function winBattle() {
         "escapeButton"
     ).style.display =
         "none";
-
-    document.getElementById(
-        "newEnemyButton"
-    ).style.display =
-        "block";
-
 
     const oldLevel =
         player.level;
@@ -6152,8 +6293,7 @@ function winBattle() {
 
     else {
 
-        document.getElementById("battleLog").innerHTML =
-            "🎉 <strong>戰鬥勝利！</strong><br>"
+        addBattleMessage("🎉 <strong>戰鬥勝利！</strong><br>"
             + "擊敗了 "
             + currentEnemy.name
             + "！<br>"
@@ -6161,7 +6301,7 @@ function winBattle() {
             + totalExp
             + "、"
             + totalGold
-            + " G！";
+            + " G！");
 
     }
 
@@ -6313,6 +6453,11 @@ function continueAfterVictory() {
 
 function loseBattle() {
 
+    stopBattleActionSystem();
+
+    playerActionWaiting = false;
+    actionValuePaused = true;
+
     battleActive = false;
 
     battleOver = true;
@@ -6336,8 +6481,7 @@ function loseBattle() {
         .style.display = "none";
 
 
-    document.getElementById("battleLog").innerHTML =
-        "💦 你失去了意識……";
+    addBattleMessage("💦 你失去了意識……");
 
 
     const overlay =
@@ -6453,6 +6597,8 @@ function loseBattle() {
 ================================================== */
 
 function leaveBattle() {
+
+    stopBattleActionSystem();
 
     battleActive = false;
 
@@ -9036,6 +9182,42 @@ function createCharacter() {
         "worldScreen"
     );
 
+}
+
+/* ==================================================
+   戰鬥測試
+================================================== */
+
+function openBattleTest() {
+
+    const list =
+        document.getElementById("battleTestMonsterList");
+
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    monsters.forEach(monster => {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "action-button";
+
+        button.textContent =
+            monster.icon + " " + monster.name;
+
+        button.onclick = function () {
+
+            startNewBattle(monster.id);
+
+        };
+
+        list.appendChild(button);
+
+    });
+
+    showScreen("battleTestScreen");
 }
 
 
