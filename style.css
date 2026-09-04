@@ -2332,11 +2332,10 @@ button:focus-visible {
 ================================================== */
 
 .global-inventory-button {
-
     position: fixed;
 
-    top: 60px;
-    right: 15px;
+    top: 85px;
+    left: 15px;
 
     width: 45px;
     height: 45px;
@@ -2349,7 +2348,6 @@ button:focus-visible {
     font-size: 22px;
 
     z-index: 1000;
-
 }
 
 /* ==================================================
@@ -2357,11 +2355,10 @@ button:focus-visible {
 ================================================== */
 
 .global-guild-quest-button {
-
     position: fixed;
 
-    top: 60px;
-    right: 70px;
+    top: 135px;
+    left: 15px;
 
     width: 45px;
     height: 45px;
@@ -2374,7 +2371,6 @@ button:focus-visible {
     font-size: 22px;
 
     z-index: 1000;
-
 }
 
 /* ==================================================
